@@ -1,12 +1,22 @@
 # file-workspace
 
-A local file workspace for the Codex desktop sidebar: Markdown editing, math, diagrams, images, PDF, code and CSV — one shared file tree.
+**在 Codex 右侧，浏览项目、阅读文档、就地编辑。**
 
-面向 Codex 桌面端右侧栏的本地文件工作台。把阅读、编辑和浏览文件放在同一页，减少反复打开标签。
+A local file workspace for the Codex desktop sidebar, with one shared file tree for Markdown, math, Mermaid diagrams, images, PDF, code and CSV.
+
+`file-workspace` 是面向 Codex 桌面端右侧栏的本地文件工作台。打开项目文件夹后，单击文件即可在当前页切换预览；阅读 Markdown、修改段落、放大图片、查看 PDF，以及把选中的内容和评论加入聊天草稿，都可以围绕同一棵文件树完成。
 
 **当前版本：1.8.2 · 实验性个人项目 · Windows 优先验证 · MIT License**
 
 ![file-workspace preview](docs/images/workspace-preview.png)
+
+## 为什么做这个项目
+
+这个项目从日常阅读笔记和课程文档时的小问题开始：公式希望正确排版，图片希望能放大，切换文件希望保留目录，读到需要讨论的段落希望能直接带进对话。后来逐步加入块编辑、流程图、PDF 和表格预览，形成了现在的工作台。
+
+设计上尽量沿用内置文件管理器的操作习惯：文件树与正文并排、边界可拖动、收起后正文恢复全宽；单击文件切换预览，双击交给宿主打开。Markdown 默认只读，进入编辑模式后，点击某一块才展开对应源码，离开该块恢复排版，修改后由用户手动保存。
+
+如果你经常一边与 Codex 对话，一边查看项目说明、学习笔记、代码或实验资料，可以从 [示例文档](examples/demo.md) 开始试用。
 
 ## 能做什么
 
@@ -32,7 +42,7 @@ codex plugin marketplace add .
 codex plugin add markdown-math-preview@markdown-preview-local
 ```
 
-`codex` 必须是支持 `plugin` 子命令的 CLI，并已加入 PATH；也可以用其完整可执行文件路径替换。仓库为私有时，克隆需要相应访问权限。
+`codex` 必须是支持 `plugin` 子命令的 CLI，并已加入 PATH；也可以用其完整可执行文件路径替换。
 
 安装后完整退出桌面应用（包括托盘），再重新启动：
 
