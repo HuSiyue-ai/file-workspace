@@ -8,19 +8,17 @@
 flowchart LR
     A[采集观测] --> B{质量检查}
     B -->|通过| C[轨迹重建]
-    B -->|未通过| D[清理与补采]
-    D --> A
-    C --> E[计算指标]
-    E --> F[汇总报告]
-    F --> G[引用与讨论]
+    B -->|未通过| E[清理与补采]
+    E --> A
+    C --> D[实验报告]
     classDef input fill:#eff6ff,stroke:#60a5fa,color:#1e3a8a
     classDef process fill:#f0fdf4,stroke:#34d399,color:#065f46
     classDef decision fill:#fff7ed,stroke:#fb923c,color:#9a3412
     classDef output fill:#eef2ff,stroke:#818cf8,color:#3730a3
-    class A,D input
-    class C,E process
+    class A,E input
+    class C process
     class B decision
-    class F,G output
+    class D output
 ```
 
 ## 为什么保留质量检查
