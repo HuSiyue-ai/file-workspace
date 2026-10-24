@@ -29,9 +29,9 @@ def main():
     call(sys.executable,'-B','-m','unittest',*tests)
     call(sys.executable,'-B','-m','unittest','test_formats.CsvTests')
     from pdf_reader import DEFAULT_PYTHON
-    available=DEFAULT_PYTHON.is_file() and subprocess.run([str(DEFAULT_PYTHON),'-B','-c','import pypdfium2,pypdf'],capture_output=True).returncode==0
+    available=DEFAULT_PYTHON.is_file() and subprocess.run([str(DEFAULT_PYTHON),'-B','-c','import pypdfium2,pypdf; from PIL import Image'],capture_output=True).returncode==0
     if available:call(sys.executable,'-B','-m','unittest','test_formats.PdfTests')
-    elif options.require_pdf:raise SystemExit('PDF checks require pypdfium2 and pypdf in FILE_WORKSPACE_PDF_PYTHON.')
+    elif options.require_pdf:raise SystemExit('PDF checks require pypdfium2, Pillow and pypdf in FILE_WORKSPACE_PDF_PYTHON.')
     else:print('SKIP optional PDF checks: install requirements-dev.txt to include them.',flush=True)
     for path in sorted(ROOT.glob('verify_*.cjs')):call(node,path.name)
     call(sys.executable,'-B','verify_parser.py')

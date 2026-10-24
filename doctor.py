@@ -12,7 +12,7 @@ def main():
     root=Path(__file__).resolve().parent
     pdf=False
     if DEFAULT_PYTHON.is_file():
-        run=subprocess.run([str(DEFAULT_PYTHON),'-B','-c','import pypdfium2'],capture_output=True,timeout=15,
+        run=subprocess.run([str(DEFAULT_PYTHON),'-B','-c','import pypdfium2; from PIL import Image'],capture_output=True,timeout=15,
             creationflags=getattr(subprocess,'CREATE_NO_WINDOW',0))
         pdf=run.returncode==0
     plugin=root/'plugins/markdown-math-preview'

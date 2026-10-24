@@ -89,7 +89,7 @@ START_TOOL = {**HOME_TOOL, 'name':'get_workspace_start', 'title':'取得当前�
 
 def dispatch(method, params):
     if method == 'initialize':
-        return {'protocolVersion':params.get('protocolVersion','2025-11-25'),'capabilities':{'tools':{},'resources':{}},'serverInfo':{'name':'markdown-math-preview','version':'1.8.1'}}
+        return {'protocolVersion':params.get('protocolVersion','2025-11-25'),'capabilities':{'tools':{},'resources':{}},'serverInfo':{'name':'markdown-math-preview','version':'1.8.2'}}
     if method == 'ping': return {}
     if method == 'tools/list': return {'tools':[TOOL,IMAGE_TOOL,DIRECTORY_TOOL,FILE_TOOL,SAVE_TOOL,HOME_TOOL,PICK_TOOL,POLL_TOOL,CANCEL_TOOL,START_TOOL,PDF_TOOL,CREATE_DIRECTORY_TOOL]}
     if method == 'resources/list': return {'resources':[{'uri':URI,'name':'file-workspace','mimeType':MIME}]}

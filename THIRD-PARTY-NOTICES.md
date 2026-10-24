@@ -14,4 +14,4 @@ The offline build copies the corresponding license files into the generated plug
 
 `vendor/SHA256SUMS.json` records the exact checked-in assets. Original CDN integrity records are also retained for highlight.js and Mermaid; `python verify_vendor.py` checks the current bytes without accessing the network.
 
-Optional PDF support uses separately installed pypdfium2/PDFium. Its upstream packages supply their own license notices; their binaries are not redistributed in this repository. The development-only pypdf package is used to create an encrypted test fixture.
+Optional PDF support uses separately installed pypdfium2/PDFium and Pillow for image encoding. Its upstream packages supply their own license notices; their binaries are not redistributed in this repository. The development-only pypdf package is used to create an encrypted test fixture.

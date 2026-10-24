@@ -45,7 +45,7 @@ def main():
         shutil.copy2(VENDOR / name, PLUGIN / 'licenses' / (name.replace('/', '-')))
     shutil.copy2(VENDOR/'highlight/LICENSE', PLUGIN/'licenses/highlightjs-LICENSE')
     shutil.copy2(VENDOR/'mermaid/LICENSE', PLUGIN/'licenses/mermaid-LICENSE')
-    manifest = {'name':'markdown-math-preview','version':'1.8.1','description':'Offline workspace for PDF reading, Markdown live editing, code highlighting, image zoom and CSV tables.',
+    manifest = {'name':'markdown-math-preview','version':'1.8.2','description':'Offline workspace for PDF reading, Markdown live editing, code highlighting, image zoom and CSV tables.',
         'author':{'name':'HuSiyue-ai'},'mcpServers':'./.mcp.json',
         'interface':{'displayName':'file-workspace','shortDescription':'PDF、Markdown、图片、代码与表格，共用一个文件树。',
         'developerName':'HuSiyue-ai','category':'Productivity','capabilities':['Read', 'Write']}}

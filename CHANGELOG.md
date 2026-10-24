@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.8.2 — 2026-10-24
+
+- Declare Pillow explicitly in the optional PDF dependencies; fresh environments need it for page-to-image conversion.
+- Check Pillow as well as PDFium before reporting PDF readiness.
+- Keep the desktop viewer behavior unchanged from 1.8.1.
+
 ## 1.8.1 — 2026-10-24
 
 First repository distribution of the existing desktop prototype.

@@ -4,7 +4,7 @@ A local file workspace for the Codex desktop sidebar: Markdown editing, math, di
 
 面向 Codex 桌面端右侧栏的本地文件工作台。把阅读、编辑和浏览文件放在同一页，减少反复打开标签。
 
-**当前版本：1.8.1 · 实验性个人项目 · Windows 优先验证 · MIT License**
+**当前版本：1.8.2 · 实验性个人项目 · Windows 优先验证 · MIT License**
 
 ![file-workspace preview](docs/images/workspace-preview.png)
 
@@ -45,7 +45,7 @@ codex plugin add markdown-math-preview@markdown-preview-local
 
 ## PDF 可选依赖
 
-其他功能只需要 Python 标准库和仓库内前端资源。PDF 使用独立进程中的 `pypdfium2`。
+其他功能只需要 Python 标准库和仓库内前端资源。PDF 使用独立进程中的 `pypdfium2` 与 `Pillow`。
 
 ```powershell
 python -m pip install -r requirements-pdf.txt
