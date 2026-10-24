@@ -1,65 +1,162 @@
 <div align="center">
 
-<img src="docs/images/logo.svg" width="76" height="76" alt="file-workspace logo">
+<img src="docs/images/showcase/cover.webp" alt="file-workspace — Read. Edit. Explore. Concept cover" width="100%">
 
-<h1>file-workspace</h1>
-
-<p><strong>Your files, at home in the Codex sidebar.</strong></p>
-<p>Browse projects · Read documents · Edit in place · Discuss selections</p>
+<p><strong>Read your files. Refine your ideas. Right beside Codex.</strong></p>
 
 <p>
   <a href="https://github.com/HuSiyue-ai/file-workspace/actions/workflows/check.yml"><img src="https://github.com/HuSiyue-ai/file-workspace/actions/workflows/check.yml/badge.svg?branch=main" alt="Checks"></a>
   <a href="https://github.com/HuSiyue-ai/file-workspace/tags"><img src="https://img.shields.io/github/v/tag/HuSiyue-ai/file-workspace?label=version&amp;color=2563eb" alt="Version"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-2563eb" alt="MIT License"></a>
-  <a href="docs/installation.md"><img src="https://img.shields.io/badge/tested_on-Windows-64748b" alt="Tested on Windows"></a>
 </p>
 
 <p><a href="README.md">简体中文</a> · <strong>English</strong></p>
 
-<p>
-  <a href="#highlights">Highlights</a> ·
-  <a href="#quick-start">Quick start</a> ·
-  <a href="#supported-files">Supported files</a> ·
-  <a href="docs/installation.md">Installation guide</a> ·
-  <a href="https://github.com/HuSiyue-ai/file-workspace/issues">Report an issue</a>
-</p>
+<p><a href="#browse-your-project">Browse</a> · <a href="#edit-and-discuss">Edit & discuss</a> · <a href="#read-each-format">File previews</a> · <a href="#installation">Install</a> · <a href="https://github.com/HuSiyue-ai/file-workspace/issues">Feedback</a></p>
 
 </div>
 
-![file-workspace: Markdown, math, an inline diagram, and a shared file tree](docs/images/workspace-preview.png)
+**file-workspace** is a local file workspace in the Codex desktop sidebar. One shared file tree connects your notes, images, PDFs, source code, and experiment data. Click to switch previews, edit Markdown in place, and bring selected passages with your comments into the current conversation.
 
-**file-workspace** is a local file plugin for the Codex desktop sidebar. Browse Markdown, images, PDFs, code, and tables through one shared file tree. Edit a passage where you read it, or bring a selection and your comment into the current conversation.
+| Browse your project | Edit and discuss | Read each format |
+| :--- | :--- | :--- |
+| [File tree](#file-tree-switch-files-without-losing-context) · [Outline](#outline-navigate-the-structure-of-a-document) | [Block editing](#block-editing-reveal-only-the-source-you-need) · [Comments](#selection-comments-keep-a-question-with-its-passage) | [Math](#math-keep-the-derivation-in-the-document) · [Diagrams](#diagrams-inline-readable-and-zoomable) · [Images](#images-from-the-full-frame-to-the-details) · [PDF](#pdf-search-the-report-jump-to-a-bookmark) · [Tables](#csv--tsv-filter-first-then-read) · [Code](#code-highlighted-and-read-only) |
 
-## Highlights
+## Browse your project
 
-### One file tree, a continuous reading flow
+### File tree: switch files without losing context
 
-Single-click a file to preview it in the current page, with your project tree still beside it.
+Notes, data, figures, and reports sit together in the project tree. Single-click a file to replace the **current preview**, preserving expanded folders, tree width, and position within the page session.
 
-- **Familiar navigation.** Click a folder to expand or collapse it; double-click to enter. Go up a level, locate the current file, or switch project roots.
-- **Room to read.** The tree sits beside the document. Drag the divider to resize it, or collapse it to restore the full preview width.
-- **Everyday file actions.** Filter loaded entries, copy paths, create folders, and add files to chat. Double-click a file to hand it to Codex.
+![File tree: expanded folders, distinct file icons, and a document beside the project](docs/images/showcase/01-file-tree.png)
 
-### Keep the preview. Edit just the block you need.
+- **Click a folder** to expand or collapse it; **double-click** to enter. Use `↑` to go up, or the locate button to find the active file.
+- Switch roots through the project menu. Filtering searches loaded names rather than scanning your whole drive.
+- Drag the divider to resize the tree; collapse it to restore the document's full width. Both areas scroll independently.
+- Right-click to copy a path, add a file to chat, or open it through the host. Create subfolders from a folder's menu. Double-clicking a file also hands it to the host.
 
-Switch to **Edit** and click a block to reveal its Markdown source. Leave the block to render it again; the rest of the document stays formatted. A full-source mode is also available for larger changes.
+### Outline: navigate the structure of a document
 
-![Block editing: source for the active passage, rendered content everywhere else](docs/images/block-editing.png)
+The tree shows where your material lives; the outline shows where you are inside it. Open **Outline** to browse headings by level and jump straight to a section.
 
-**You choose when changes reach disk.** Click **Save** or press `Ctrl+S`. Before writing, the plugin checks for external changes and backs up the original file.
+![Document outline: expanded heading hierarchy and current reading location](docs/images/showcase/10-outline.png)
 
-### Math, diagrams, and images belong in the document
+- Expand individual sections or expand / collapse the entire heading hierarchy.
+- The active section follows your reading position as the document scrolls.
+- The outline shares the resizable sidebar with the file tree; switch or hide it whenever needed.
 
-- **Math.** Inline and display equations rendered with KaTeX, including mixed text in lists and blockquotes.
-- **Diagrams.** Mermaid renders inline. Hover for zoom controls, use `Ctrl` / `⌘` + wheel to zoom, and drag after zooming in.
-- **Local images.** Relative paths, paths with spaces or Chinese characters, reference images, and Obsidian embeds. Standalone images support zoom, pan, fit-to-window, and actual size.
-- **Selection comments.** Select text, add a comment, revisit it through a numbered bubble, and add the quote and comment to a chat draft. Sending remains your choice.
+## Edit and discuss
 
-## Quick start
+### Block editing: reveal only the source you need
 
-**Requirements:** Python **3.12+**, a **Codex desktop** version with local plugins and MCP App file entries, and a CLI supporting `codex plugin`. Windows is the primary tested environment. Native file dialogs require Tkinter.
+**Read** mode locks the document for browsing and selection. Switch to **Edit**, then click a paragraph, list, or code block. Only that block reveals its Markdown; surrounding headings, equations, and images stay rendered.
 
-### 1. Clone and build
+![Block editing: bold and inline-math source in one passage, rendered math and code around it](docs/images/showcase/02-block-editing.png)
+
+1. Select **Edit** and click a block. For ordinary text and code, the editor attempts to place the caret at the clicked position.
+2. Change the text, then click another block. The previous one renders again and the next reveals its source.
+3. Use **Source** mode for whole-document changes. Undo and redo are supported.
+4. Click **Save** or press `Ctrl+S` to write to disk. An external-change conflict prevents an overwrite; the original file is backed up before saving.
+
+The screenshot shows `**预测位置**` and `$e$` as source while the display equation stays rendered. Editing supports existing UTF-8 `.md` / `.markdown` documents.
+
+### Selection comments: keep a question with its passage
+
+Keep the quotation and your own thought separate, collect several passages, then add them to the conversation together. Confirmed comments appear as numbered bubbles you can revisit.
+
+![Comment close-up: a numbered bubble on the first passage and a compact input beside the next](docs/images/showcase/05-comments.png)
+
+1. Select text, click **Comment…**, and enter a question or requested change in the compact input.
+2. Confirm with `✓` to keep a numbered bubble, then continue selecting passages.
+3. Open **Comments N** in the toolbar to edit individual comments or remove quotations.
+4. Choose **Add to chat draft** to include each quote with its comment. **Nothing is sent automatically.**
+
+Comments live in the current tab's memory and disappear when it closes. They are not permanent Markdown annotations or native host comment cards.
+
+## Read each format
+
+### Math: keep the derivation in the document
+
+Inline equations flow with the sentence; display equations get their own space. Matrices, fractions, integrals, and scripts are rendered locally with KaTeX.
+
+![Math close-up: inline notation, a transition matrix, an underbrace, and a Bayesian fraction](docs/images/showcase/03-math-detail.png)
+
+- Use `$...$` for inline math and `$$...$$` for display math.
+- Mix equations into paragraphs, lists, blockquotes, and tables.
+- Edit the original Markdown / LaTeX source; rendered output does not replace the document text.
+
+Try the [equation notes](examples/atlas-lab/notes/equations.md).
+
+### Diagrams: inline, readable, and zoomable
+
+Mermaid code blocks become diagrams inside the document. Inspect the workflow, then keep reading the explanation immediately below it.
+
+![Mermaid close-up: a colored branching workflow with zoom and reset controls](docs/images/showcase/04-mermaid.png)
+
+- Hover or focus the diagram to reveal `−`, `+`, and reset controls.
+- Use `Ctrl` / `⌘` + wheel to zoom, then drag to pan.
+- Zoom retains the diagram's allocated height rather than pushing the following text down.
+- Read mode shows the diagram; edit and source modes retain its definition. A parsing error leaves the source available for inspection.
+
+Try the [data pipeline](examples/atlas-lab/notes/pipeline.md).
+
+### Images: from the full frame to the details
+
+Open images in the same workspace. Fit the complete image, then zoom in to inspect a screenshot, figure, or photograph.
+
+![Image viewer: a complete alpine scene with zoom, fit-to-window, and actual-size controls](docs/images/showcase/06-image-viewer.png)
+
+- Wheel zoom is centered on the pointer; drag after zooming in. The toolbar offers `−`, `+`, fit-to-window, and actual size.
+- Double-click to switch fit / actual size. Focus the image area to use keyboard zoom and pan shortcuts.
+- Pixel dimensions and format are shown. PNG, JPEG, GIF, WebP, SVG, BMP, ICO, and AVIF decoding depends on the host.
+- Markdown embeds support local relative paths, spaces and Chinese characters in paths, reference images, and Obsidian image syntax.
+
+The [alpine sample](examples/atlas-lab/figures/alpine-lake.webp) is AI-generated artwork used to demonstrate the viewer.
+
+### PDF: search the report, jump to a bookmark
+
+Click a PDF in the tree and keep reading on the same page. Navigate by page number, zoom level, bookmark, or a cross-page text search.
+
+![PDF reader: a fictional report, highlighted runtime matches, search results, and bookmarks](docs/images/showcase/07-pdf-search.png)
+
+- Move between pages or enter a page number; select fit-to-width or a fixed zoom level.
+- Search for a word, choose a matching page, and see its occurrences highlighted.
+- Open **Outline** to navigate the document's own bookmarks.
+- Rendering runs in a separate PDF process, with optional `pypdfium2` and `Pillow` dependencies.
+
+Try the [fictional benchmark report](examples/atlas-lab/reports/benchmark-report.pdf). Pages are displayed as images; PDF text selection, OCR, forms, and annotations are not supported.
+
+### CSV / TSV: filter first, then read
+
+Inspect experiment logs and exported data without first opening a spreadsheet app. The viewer provides columns, filtering, pagination, and a raw-text view.
+
+![CSV viewer: filtering 48 fictional records by a scene name while preserving headers and row numbers](docs/images/showcase/08-csv-filter.png)
+
+- Filter the loaded table by a keyword while retaining original row numbers for reference.
+- Toggle whether the first row is a header, and page through longer tables.
+- Switch between **Table** and **Raw text** to inspect delimiters and original content.
+- This is a read-only viewer: it does not edit cells or evaluate formulas. Size and row / column limits are reported rather than silently ignored.
+
+Try the [48-record CSV](examples/atlas-lab/data/benchmark.csv). All data is fictional.
+
+### Code: highlighted and read-only
+
+Jump from a document into its implementation. Syntax highlighting distinguishes functions, strings, comments, and keywords.
+
+<p align="center"><img src="docs/images/showcase/09-code.png" alt="Code close-up: a Python data class, a function, and Chinese comments with syntax highlighting" width="700"></p>
+
+- Language detection follows the file type; ordinary UTF-8 text is also readable.
+- Highlighting assets ship with the plugin, without runtime CDN requests.
+- Source is read, not executed. Use an external editor to change code files.
+- Notebooks currently show raw JSON; Office files, audio, video, and other unsupported formats are handed to the host.
+
+Try the [Python sample](examples/atlas-lab/src/reconstruct.py).
+
+## Installation
+
+**Primary tested environment: Windows.** Requires Python **3.12+**, Codex desktop with local plugins and MCP App file entries, and a CLI supporting `codex plugin`. Native dialogs require Tkinter. Node.js is not required for everyday use.
+
+### 1. Clone, build, and check
 
 Choose a directory you intend to keep, then run in PowerShell:
 
@@ -70,7 +167,7 @@ python build.py
 python doctor.py
 ```
 
-### 2. Register and install
+### 2. Register the local plugin
 
 Continue from the repository root:
 
@@ -79,91 +176,44 @@ codex plugin marketplace add .
 codex plugin add markdown-math-preview@markdown-preview-local
 ```
 
-`markdown-math-preview` is the legacy internal identifier, retained for compatibility. The display name is **file-workspace**. A local build is required; the GitHub URL alone is not a ready-to-install remote plugin source.
+The display name is **file-workspace**. Commands retain the legacy internal ID for compatibility. Build locally first; the GitHub URL alone is not a ready-to-install remote plugin source.
 
-### 3. Open your first file
+### 3. Open it in the sidebar
 
-1. Fully quit Codex, including its tray process, then restart it.
-2. Open a Markdown file or image in the sidebar. From its **Open** menu, choose the in-app **file-workspace** viewer.
-3. Open the file tree and click another file to switch the preview in place.
+Fully quit Codex, including the tray process, then restart. Open a Markdown file or image in the sidebar and choose the in-app **file-workspace** viewer from its **Open** menu. Use the tree to continue browsing.
 
-You can also enter a blank workspace through the plugin tool entry on a new tab, then select a project folder. Entry placement depends on the host version. Try [the demo document](examples/demo.md) for math, Mermaid, and a local image.
-
-> Missing an entry, updating, or rolling back? See the [installation guide](docs/installation.md). `python doctor.py` only checks your environment; it does not install software or change settings.
+Alternatively, enter a blank workspace through the plugin tool entry on a new tab and choose a project folder. Entry placement varies by host version. See the [installation guide](docs/installation.md) for updates, rollback, and uninstall steps.
 
 <details>
-<summary><strong>Want PDF previews? Install the optional dependencies.</strong></summary>
+<summary><strong>Enable PDF previews</strong></summary>
 
 ```powershell
 python -m pip install -r requirements-pdf.txt
 ```
 
-PDF support uses `pypdfium2` and `Pillow`. The plugin prefers an available Codex PDF runtime, then the Python interpreter used to build it. Set `FILE_WORKSPACE_PDF_PYTHON` to override this choice. Run `python doctor.py` to check the selected environment.
+Run `python doctor.py` to inspect the actual PDF Python environment. The plugin prefers an available Codex PDF runtime, then the build interpreter. Override it with `FILE_WORKSPACE_PDF_PYTHON`. The doctor only checks; it does not install software or change settings.
 
 </details>
 
-## Supported files
+## Data, saves, and compatibility
 
-| File | Available in the workspace |
-| :--- | :--- |
-| **Markdown** · `.md` / `.markdown` | Reading, block and full-source editing, outline navigation, math, Mermaid, local images |
-| **Images** · PNG / JPEG / GIF / WebP / SVG / BMP / ICO / AVIF | Zoom, pan, fit-to-window, actual size; decoding depends on the host |
-| **PDF** · optional dependencies | Pages, zoom, bookmarks, text search |
-| **Code and text** | Offline syntax highlighting and raw text |
-| **CSV / TSV** | Pagination, filtering, header toggle, raw text |
-| **Other files** | Browse in the tree and hand off to the host |
+- **Local rendering.** The plugin does not upload files, fetch remote images, or execute document code. Quotations explicitly added to chat enter its draft and are then handled by Codex.
+- **Explicit saves.** Original-file versions are checked and backups go to `~/.codex/backups/file-preview/`. Unsaved drafts and in-memory comments are not permanent backups.
+- **Access boundaries.** A selected file or project establishes an anchor; subsequent browsing can reach the same drive. **This is not a project-directory sandbox.** UNC / network shares are unsupported.
+- **Host compatibility.** Native tabs usually display the plugin name; the active file name appears in the plugin toolbar. Project detection and chat-draft entry points depend on the host. Manual folder selection remains available.
 
-Markdown editing supports existing UTF-8 documents. PDF text selection, OCR, forms, and annotations are not supported. There are no dedicated Office, audio/video, or Notebook renderers. See [support and limits](docs/limitations.md) for format and size boundaries.
+See [support and limitations](docs/limitations.md) for format and size limits. This independent project is evolving; every Codex desktop version has not been validated.
 
-## Local rendering. Explicit saves.
+## Documentation and development
 
-Rendering libraries ship with the plugin; no runtime CDN requests are needed. The plugin does not upload files, fetch remote images, or execute document code. Quotes you explicitly add to a conversation enter its draft and are then handled by Codex.
+[Installation](docs/installation.md) · [Limitations](docs/limitations.md) · [Architecture](docs/architecture.md) · [Changelog](CHANGELOG.md) · [Contributing](CONTRIBUTING.md) · [Visual assets](docs/visuals.md)
 
-- **Manual saves.** External changes are checked before writing; a conflict prevents an overwrite.
-- **Original-file backups.** Stored in `~/.codex/backups/file-preview/` for recovery.
-- **Temporary comments.** Bubbles and comments live in the current tab's memory. Add them to a draft before closing the tab.
-
-The selected file or project establishes an access anchor. Subsequent browsing can reach files on the **same drive**; this is not a project-directory sandbox. Read the [access boundaries and compatibility notes](docs/limitations.md).
-
-## FAQ
+Detailed guides are currently in Chinese. This README covers everyday use and installation in English.
 
 <details>
-<summary><strong>Does this replace the native Codex file viewer?</strong></summary>
+<summary><strong>Run development checks</strong></summary>
 
-It is an in-app plugin with its own tree, editor, and comment UI, entered through a file's **Open** menu. The host tab usually displays the plugin name; the active file name appears in the plugin toolbar. The host decides whether a native open action creates or reuses a tab.
-
-</details>
-
-<details>
-<summary><strong>What if the project root is not detected?</strong></summary>
-
-Automatic detection relies on host metadata and a local state adapter, which may need updates when the host changes. Select a folder manually from the project menu to continue browsing.
-
-</details>
-
-<details>
-<summary><strong>Which systems are tested? Do I need Node.js?</strong></summary>
-
-Windows is the primary tested environment. Other operating systems and every Codex desktop version are not guaranteed to work. Node.js is needed for development checks, not normal use. Keep the source directory and Python interpreter available; rebuild and reinstall after moving them.
-
-</details>
-
-## Documentation and contributing
-
-The detailed guides below are currently in Chinese. This README covers installation and everyday use in English.
-
-| I want to… | Start here |
-| :--- | :--- |
-| Install, update, roll back, or uninstall | [Installation](docs/installation.md) |
-| Check format limits and known boundaries | [Support and limitations](docs/limitations.md) |
-| Understand the server, renderer, and editor | [Architecture](docs/architecture.md) |
-| Report a problem or contribute | [Contributing](CONTRIBUTING.md) · [Issues](https://github.com/HuSiyue-ai/file-workspace/issues) |
-| Read version changes | [Changelog](CHANGELOG.md) |
-
-<details>
-<summary><strong>Local development and checks</strong></summary>
-
-Requires Python 3.12+ and Node.js. From the repository root:
+Requires Python 3.12+ and Node.js:
 
 ```powershell
 python -m pip install -r requirements-dev.txt
@@ -171,16 +221,14 @@ python build.py
 python check.py --require-pdf
 ```
 
-Checks cover file access, paths, save conflicts, directories, the MCP handshake, frontend state regressions, Markdown parsing, PDF support, and vendor integrity. Without PDF dependencies, run `python check.py` to check the other features.
-
-`python dev_preview.py` starts an isolated UI bound only to `127.0.0.1`. Chat-draft requests are intercepted and do not reach a real conversation. This harness does not replace testing in Codex desktop.
+Without PDF dependencies, run `python check.py` for the other checks. `python dev_preview.py` provides an isolated UI bound only to `127.0.0.1`, intercepting chat-draft requests so they do not reach real conversations. It does not replace desktop-host compatibility testing.
 
 </details>
 
 ## License and acknowledgements
 
-[MIT License](LICENSE) © HuSiyue-ai. Third-party components retain their own licenses; see [third-party notices](THIRD-PARTY-NOTICES.md).
+[MIT](LICENSE) © HuSiyue-ai. Third-party components retain their licenses; see [third-party notices](THIRD-PARTY-NOTICES.md).
 
-Built with [Marked](https://github.com/markedjs/marked), [KaTeX](https://github.com/KaTeX/KaTeX), [Mermaid](https://github.com/mermaid-js/mermaid), [DOMPurify](https://github.com/cure53/DOMPurify), [highlight.js](https://github.com/highlightjs/highlight.js), and [pypdfium2](https://github.com/pypdfium2-team/pypdfium2).
+Built with Marked, KaTeX, Mermaid, DOMPurify, highlight.js, pypdfium2, and other open-source components. Designed, tested, and maintained by **HuSiyue-ai** around everyday needs, with AI-assisted development. Not affiliated with or endorsed by OpenAI.
 
-Designed and maintained by **HuSiyue-ai** around everyday use, with AI-assisted development. An evolving independent project; not affiliated with or endorsed by OpenAI.
+The cover is AI-generated concept artwork. The ten feature images are screenshots or close-ups of the real viewer in an isolated demo host, using a fictional project and data. Click an image to view the original.
