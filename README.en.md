@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="docs/images/showcase/cover.webp" alt="file-workspace — Read. Edit. Explore. Concept cover" width="100%">
+<table><tr><td><a href="docs/images/showcase/cover.webp"><img src="docs/images/showcase/cover.webp" alt="file-workspace — Read. Edit. Explore. Concept cover" width="100%"></a></td></tr></table>
 
 <p><strong>Read your files. Refine your ideas. Right beside Codex.</strong></p>
 
@@ -16,7 +16,19 @@
 
 </div>
 
-**file-workspace** is a local file workspace in the Codex desktop sidebar. One shared file tree connects your notes, images, PDFs, source code, and experiment data. Click to switch previews, edit Markdown in place, and bring selected passages with your comments into the current conversation.
+## A reading session rarely stops at one file
+
+You are working through an experiment report with Codex. The method lives in Markdown, the results are screenshots, the measurements are a CSV, and the reference is a PDF. A claim catches your attention: you want to inspect the figure, check the data, then leave a precise comment on the passage.
+
+The material belongs together, but small interruptions can fragment the reading flow:
+
+- **Finding a file is only the first step.** Expanded folders and reading positions should stay with you. A growing row of tabs makes context harder to follow.
+- **Opening a file should make it readable.** Equations need proper typesetting, diagrams need zoom, local images need to load, and a table needs to reveal the relevant rows.
+- **Understanding should lead naturally to action.** Edit a passage with its surrounding content still visible. Bring the exact quotation and your own comment into the discussion together.
+
+file-workspace began with Markdown equation previews. Local images, a shared tree, block editing, and passage comments gradually turned it into a local workspace beside Codex: **follow the project through its files, edit where you read, and bring evidence into the conversation.**
+
+The walkthrough below follows that flow: **browse → edit and discuss → read each format**, with a dedicated image and a sample for each feature.
 
 | Browse your project | Edit and discuss | Read each format |
 | :--- | :--- | :--- |
@@ -28,7 +40,7 @@
 
 Notes, data, figures, and reports sit together in the project tree. Single-click a file to replace the **current preview**, preserving expanded folders, tree width, and position within the page session.
 
-![File tree: expanded folders, distinct file icons, and a document beside the project](docs/images/showcase/01-file-tree.png)
+<table><tr><td><a href="docs/images/showcase/01-file-tree.png"><img src="docs/images/showcase/01-file-tree.png" alt="File tree: expanded folders, distinct file icons, and a document beside the project" width="100%"></a></td></tr></table>
 
 - **Click a folder** to expand or collapse it; **double-click** to enter. Use `↑` to go up, or the locate button to find the active file.
 - Switch roots through the project menu. Filtering searches loaded names rather than scanning your whole drive.
@@ -39,7 +51,7 @@ Notes, data, figures, and reports sit together in the project tree. Single-click
 
 The tree shows where your material lives; the outline shows where you are inside it. Open **Outline** to browse headings by level and jump straight to a section.
 
-![Document outline: expanded heading hierarchy and current reading location](docs/images/showcase/10-outline.png)
+<table><tr><td><a href="docs/images/showcase/10-outline.png"><img src="docs/images/showcase/10-outline.png" alt="Document outline: expanded heading hierarchy and current reading location" width="100%"></a></td></tr></table>
 
 - Expand individual sections or expand / collapse the entire heading hierarchy.
 - The active section follows your reading position as the document scrolls.
@@ -51,7 +63,7 @@ The tree shows where your material lives; the outline shows where you are inside
 
 **Read** mode locks the document for browsing and selection. Switch to **Edit**, then click a paragraph, list, or code block. Only that block reveals its Markdown; surrounding headings, equations, and images stay rendered.
 
-![Block editing: bold and inline-math source in one passage, rendered math and code around it](docs/images/showcase/02-block-editing.png)
+<table><tr><td><a href="docs/images/showcase/02-block-editing.png"><img src="docs/images/showcase/02-block-editing.png" alt="Block editing: bold and inline-math source in one passage, rendered math and code around it" width="100%"></a></td></tr></table>
 
 1. Select **Edit** and click a block. For ordinary text and code, the editor attempts to place the caret at the clicked position.
 2. Change the text, then click another block. The previous one renders again and the next reveals its source.
@@ -64,7 +76,7 @@ The screenshot shows `**预测位置**` and `$e$` as source while the display eq
 
 Keep the quotation and your own thought separate, collect several passages, then add them to the conversation together. Confirmed comments appear as numbered bubbles you can revisit.
 
-![Comment close-up: a numbered bubble on the first passage and a compact input beside the next](docs/images/showcase/05-comments.png)
+<table><tr><td><a href="docs/images/showcase/05-comments.png"><img src="docs/images/showcase/05-comments.png" alt="Comment close-up: a numbered bubble on the first passage and a compact input beside the next" width="100%"></a></td></tr></table>
 
 1. Select text, click **Comment…**, and enter a question or requested change in the compact input.
 2. Confirm with `✓` to keep a numbered bubble, then continue selecting passages.
@@ -79,7 +91,7 @@ Comments live in the current tab's memory and disappear when it closes. They are
 
 Inline equations flow with the sentence; display equations get their own space. Matrices, fractions, integrals, and scripts are rendered locally with KaTeX.
 
-![Math close-up: inline notation, a transition matrix, an underbrace, and a Bayesian fraction](docs/images/showcase/03-math-detail.png)
+<table><tr><td><a href="docs/images/showcase/03-math-detail.png"><img src="docs/images/showcase/03-math-detail.png" alt="Math close-up: inline notation, a transition matrix, an underbrace, and a Bayesian fraction" width="100%"></a></td></tr></table>
 
 - Use `$...$` for inline math and `$$...$$` for display math.
 - Mix equations into paragraphs, lists, blockquotes, and tables.
@@ -91,7 +103,7 @@ Try the [equation notes](examples/atlas-lab/notes/equations.md).
 
 Mermaid code blocks become diagrams inside the document. Inspect the workflow, then keep reading the explanation immediately below it.
 
-![Mermaid close-up: a colored branching workflow with zoom and reset controls](docs/images/showcase/04-mermaid.png)
+<table><tr><td><a href="docs/images/showcase/04-mermaid.png"><img src="docs/images/showcase/04-mermaid.png" alt="Mermaid close-up: a colored branching workflow with zoom and reset controls" width="100%"></a></td></tr></table>
 
 - Hover or focus the diagram to reveal `−`, `+`, and reset controls.
 - Use `Ctrl` / `⌘` + wheel to zoom, then drag to pan.
@@ -104,7 +116,7 @@ Try the [data pipeline](examples/atlas-lab/notes/pipeline.md).
 
 Open images in the same workspace. Fit the complete image, then zoom in to inspect a screenshot, figure, or photograph.
 
-![Image viewer: a complete alpine scene with zoom, fit-to-window, and actual-size controls](docs/images/showcase/06-image-viewer.png)
+<table><tr><td><a href="docs/images/showcase/06-image-viewer.png"><img src="docs/images/showcase/06-image-viewer.png" alt="Image viewer: a complete alpine scene with zoom, fit-to-window, and actual-size controls" width="100%"></a></td></tr></table>
 
 - Wheel zoom is centered on the pointer; drag after zooming in. The toolbar offers `−`, `+`, fit-to-window, and actual size.
 - Double-click to switch fit / actual size. Focus the image area to use keyboard zoom and pan shortcuts.
@@ -117,7 +129,7 @@ The [alpine sample](examples/atlas-lab/figures/alpine-lake.webp) is AI-generated
 
 Click a PDF in the tree and keep reading on the same page. Navigate by page number, zoom level, bookmark, or a cross-page text search.
 
-![PDF reader: a fictional report, highlighted runtime matches, search results, and bookmarks](docs/images/showcase/07-pdf-search.png)
+<table><tr><td><a href="docs/images/showcase/07-pdf-search.png"><img src="docs/images/showcase/07-pdf-search.png" alt="PDF reader: a fictional report, highlighted runtime matches, search results, and bookmarks" width="100%"></a></td></tr></table>
 
 - Move between pages or enter a page number; select fit-to-width or a fixed zoom level.
 - Search for a word, choose a matching page, and see its occurrences highlighted.
@@ -130,7 +142,7 @@ Try the [fictional benchmark report](examples/atlas-lab/reports/benchmark-report
 
 Inspect experiment logs and exported data without first opening a spreadsheet app. The viewer provides columns, filtering, pagination, and a raw-text view.
 
-![CSV viewer: filtering 48 fictional records by a scene name while preserving headers and row numbers](docs/images/showcase/08-csv-filter.png)
+<table><tr><td><a href="docs/images/showcase/08-csv-filter.png"><img src="docs/images/showcase/08-csv-filter.png" alt="CSV viewer: filtering 48 fictional records by a scene name while preserving headers and row numbers" width="100%"></a></td></tr></table>
 
 - Filter the loaded table by a keyword while retaining original row numbers for reference.
 - Toggle whether the first row is a header, and page through longer tables.
@@ -143,7 +155,7 @@ Try the [48-record CSV](examples/atlas-lab/data/benchmark.csv). All data is fict
 
 Jump from a document into its implementation. Syntax highlighting distinguishes functions, strings, comments, and keywords.
 
-<p align="center"><img src="docs/images/showcase/09-code.png" alt="Code close-up: a Python data class, a function, and Chinese comments with syntax highlighting" width="700"></p>
+<table align="center"><tr><td><a href="docs/images/showcase/09-code.png"><img src="docs/images/showcase/09-code.png" alt="Code close-up: a Python data class, a function, and Chinese comments with syntax highlighting" width="700"></a></td></tr></table>
 
 - Language detection follows the file type; ordinary UTF-8 text is also readable.
 - Highlighting assets ship with the plugin, without runtime CDN requests.
