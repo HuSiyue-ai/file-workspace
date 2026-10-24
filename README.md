@@ -1,91 +1,184 @@
-# file-workspace
+<div align="center">
 
-**在 Codex 右侧，浏览项目、阅读文档、就地编辑。**
+<img src="docs/images/logo.svg" width="76" height="76" alt="file-workspace logo">
 
-A local file workspace for the Codex desktop sidebar, with one shared file tree for Markdown, math, Mermaid diagrams, images, PDF, code and CSV.
+<h1>file-workspace</h1>
 
-`file-workspace` 是面向 Codex 桌面端右侧栏的本地文件工作台。打开项目文件夹后，单击文件即可在当前页切换预览；阅读 Markdown、修改段落、放大图片、查看 PDF，以及把选中的内容和评论加入聊天草稿，都可以围绕同一棵文件树完成。
+<p><strong>让 Codex 的右侧栏，成为你的文件工作台。</strong></p>
+<p>浏览项目 · 阅读文档 · 就地编辑 · 引用到对话</p>
 
-**当前版本：1.8.2 · 实验性个人项目 · Windows 优先验证 · MIT License**
+<p>
+  <a href="https://github.com/HuSiyue-ai/file-workspace/actions/workflows/check.yml"><img src="https://github.com/HuSiyue-ai/file-workspace/actions/workflows/check.yml/badge.svg?branch=main" alt="Checks"></a>
+  <a href="https://github.com/HuSiyue-ai/file-workspace/tags"><img src="https://img.shields.io/github/v/tag/HuSiyue-ai/file-workspace?label=version&amp;color=2563eb" alt="Version"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-2563eb" alt="MIT License"></a>
+  <a href="docs/installation.md"><img src="https://img.shields.io/badge/tested_on-Windows-64748b" alt="Tested on Windows"></a>
+</p>
 
-![file-workspace preview](docs/images/workspace-preview.png)
+<p><strong>简体中文</strong> · <a href="README.en.md">English</a></p>
 
-## 为什么做这个项目
+<p>
+  <a href="#核心体验">核心体验</a> ·
+  <a href="#快速开始">快速开始</a> ·
+  <a href="#支持的文件">支持的文件</a> ·
+  <a href="docs/installation.md">安装文档</a> ·
+  <a href="https://github.com/HuSiyue-ai/file-workspace/issues">反馈问题</a>
+</p>
 
-这个项目从日常阅读笔记和课程文档时的小问题开始：公式希望正确排版，图片希望能放大，切换文件希望保留目录，读到需要讨论的段落希望能直接带进对话。后来逐步加入块编辑、流程图、PDF 和表格预览，形成了现在的工作台。
+</div>
 
-设计上尽量沿用内置文件管理器的操作习惯：文件树与正文并排、边界可拖动、收起后正文恢复全宽；单击文件切换预览，双击交给宿主打开。Markdown 默认只读，进入编辑模式后，点击某一块才展开对应源码，离开该块恢复排版，修改后由用户手动保存。
+![file-workspace 实机界面：Markdown、公式、流程图与共享文件树](docs/images/workspace-preview.png)
 
-如果你经常一边与 Codex 对话，一边查看项目说明、学习笔记、代码或实验资料，可以从 [示例文档](examples/demo.md) 开始试用。
+**file-workspace** 是一个运行在 Codex 桌面端右侧栏的本地文件插件。用同一棵文件树浏览 Markdown、图片、PDF、代码和表格；读到需要修改或讨论的地方，就地编辑，或把引用与评论带入当前对话。
 
-## 能做什么
+## 核心体验
 
-- **一棵文件树**：单击文件原位预览，双击交给宿主打开；文件夹单击展开、双击进入，支持项目根目录切换、上级、定位、筛选、拖动栏宽和新建文件夹。
-- **Markdown 阅读与编辑**：阅读时锁定；编辑时点击一个块展开源码，其他块保持排版；也可编辑整篇源码。手动保存、冲突检查、原文件备份和撤销/重做。
-- **公式与图表**：KaTeX 行内/块级公式，Mermaid 直接内嵌正文；缩放和拖动不撑动图的占位高度。
-- **图片**：独立图片缩放、拖动、适应窗口；Markdown 支持本地相对路径、中文/空格路径、引用式和 Obsidian 图片。
-- **PDF / 代码 / 表格**：PDF 翻页、缩放、书签和文字搜索；离线代码高亮；CSV/TSV 分页、筛选和原文切换。
-- **选区批注**：选文后添加评论，编号气泡可回改；确认后加入聊天草稿，不自动发送。
+### 一个文件树，连续浏览整个项目
 
-## 安装与开始使用
+单击文件，在当前页切换预览；目录始终留在身旁。
 
-需要 Python **3.12+** 和支持本地插件 / MCP App 文件入口的 Codex 桌面环境。文件选择框需要 Tkinter。Node.js 只用于开发测试，日常预览不需要。
+- **熟悉的目录操作**：单击文件夹展开 / 收起，双击进入，支持返回上级、定位当前文件和切换项目根目录。
+- **为阅读留出空间**：文件树与正文并排，拖动边界调整宽度，收起后正文恢复全宽。
+- **常用操作就在手边**：筛选已加载文件、复制路径、新建文件夹，以及将文件添加到聊天。双击文件交给 Codex 打开。
 
-本项目采用**先本地构建，再注册本地 marketplace**的方式。构建会为安装者生成 Python 和服务器路径；不要直接把仓库地址当作开箱即用的远程插件源。
+### 保持预览，只编辑需要改的那一段
+
+切到「编辑」，点击一个块，只有这一块展开 Markdown 源码；离开后恢复排版，其余内容保持渲染。需要调整整篇结构时，也可以切到源码模式。
+
+![块编辑：当前段落显示 Markdown 源码，其余内容保持渲染](docs/images/block-editing.png)
+
+**修改由你决定何时落盘。** 点击「保存」或按 `Ctrl+S` 写回文件；保存前检查文件是否被外部修改，并保留原文件备份。
+
+### 公式、图表和图片，直接融入文档
+
+- **公式**：KaTeX 渲染行内与块级公式，支持段落、列表和引用中的混排。
+- **流程图**：Mermaid 内嵌正文；悬停显示缩放控件，支持 `Ctrl` / `⌘` + 滚轮缩放，放大后可拖动。
+- **本地图片**：支持相对路径、中文与空格路径、引用式图片及 Obsidian 图片语法；独立图片可缩放、拖动、适应窗口或按原始大小查看。
+- **选区评论**：选中文字，写下评论，用编号气泡回看修改，再把引用和评论加入聊天草稿，由你确认发送。
+
+## 快速开始
+
+**需要：** Python **3.12+**、支持本地插件与 MCP App 文件入口的 **Codex 桌面端**，以及可运行 `codex plugin` 的 CLI。当前以 Windows 为主要验证环境；文件选择对话框需要 Tkinter。
+
+### 1. 获取并构建
+
+将仓库放在打算长期保留的位置，然后在 PowerShell 中运行：
 
 ```powershell
 git clone https://github.com/HuSiyue-ai/file-workspace.git
 cd file-workspace
 python build.py
 python doctor.py
+```
+
+### 2. 注册并安装
+
+在仓库根目录继续运行：
+
+```powershell
 codex plugin marketplace add .
 codex plugin add markdown-math-preview@markdown-preview-local
 ```
 
-`codex` 必须是支持 `plugin` 子命令的 CLI，并已加入 PATH；也可以用其完整可执行文件路径替换。
+`markdown-math-preview` 是为兼容旧版本保留的内部标识，安装后显示的名称是 **file-workspace**。本项目需要本地构建，不能跳过构建、直接把 GitHub 地址当作即装即用的插件源。
 
-安装后完整退出桌面应用（包括托盘），再重新启动：
+### 3. 打开你的第一个文件
 
-1. 在右侧打开一个 Markdown / 图片等支持文件。
-2. 在文件的“打开”菜单中选择应用内查看器 **file-workspace**。
-3. 也可在新标签页的插件工具入口打开空白工作台，再从文件树单击选择文件。入口位置取决于宿主版本。
-4. 先用 [examples/demo.md](examples/demo.md) 试用；编辑后点击“保存”或按 Ctrl+S 才写回文件。
+1. 完整退出 Codex（包括托盘），重新启动。
+2. 在右侧打开一个 Markdown 或图片，在「打开」菜单中选择应用内查看器 **file-workspace**。
+3. 打开「文件树」，单击其他文件，即可在同一页切换预览。
 
-[块编辑截图](docs/images/block-editing.png) · [完整安装、升级与回退说明](docs/installation.md) · [支持范围与限制](docs/limitations.md) · [设计与结构](docs/architecture.md)
+也可以从新标签页的插件工具入口进入空白工作台，再选择项目文件夹；入口位置依宿主版本而异。先打开 [示例文档](examples/demo.md) 即可体验公式、流程图和本地图片。
 
-## PDF 可选依赖
+> 找不到入口、需要升级或回退？查看 [完整安装指南](docs/installation.md)。`python doctor.py` 只检查环境，不会自动安装软件或修改设置。
 
-其他功能只需要 Python 标准库和仓库内前端资源。PDF 使用独立进程中的 `pypdfium2` 与 `Pillow`。
+<details>
+<summary><strong>需要预览 PDF？安装这两个可选依赖</strong></summary>
 
 ```powershell
 python -m pip install -r requirements-pdf.txt
 ```
 
-插件优先使用已有 Codex PDF 运行时，否则使用构建时的 Python；也可以设置 `FILE_WORKSPACE_PDF_PYTHON` 指向安装了该包的解释器。运行 `python doctor.py` 查看结果。
+PDF 使用 `pypdfium2` 与 `Pillow`。插件优先使用可用的 Codex PDF 运行时，否则使用构建时的 Python；也可通过 `FILE_WORKSPACE_PDF_PYTHON` 指定解释器。运行 `python doctor.py` 确认实际使用的环境。
 
-## 本地数据如何处理
+</details>
 
-预览资源和公式/图表/高亮库均在本地。插件不上传文件、不联网拉取图片，不执行文档代码。用户主动打开外部网页链接时会交给宿主。
+## 支持的文件
 
-保存前校验原文件版本，并备份到 `~/.codex/backups/file-preview/`。未保存草稿尝试存储在查看器本地存储；选区批注只保留在当前标签内存中。加入对话的引用会进入当前聊天草稿，由用户自行决定是否发送。
+| 文件 | 在工作台中可以做什么 |
+| :--- | :--- |
+| **Markdown** · `.md` / `.markdown` | 阅读、块编辑、整篇源码编辑、大纲跳转、公式、Mermaid、本地图片 |
+| **图片** · PNG / JPEG / GIF / WebP / SVG / BMP / ICO / AVIF | 缩放、拖动、适应窗口、原始大小；解码取决于宿主 |
+| **PDF** · 可选依赖 | 翻页、缩放、书签、文字搜索 |
+| **代码与文本** | 离线语法高亮、原文查看 |
+| **CSV / TSV** | 分页、筛选、表头切换、原文查看 |
+| **其他文件** | 在文件树中浏览，交给宿主打开 |
 
-这是**本地文件访问工具**：当前文件/项目建立访问锚点，后端按需读取同一磁盘的支持文件，**不是限制在项目文件夹内的沙箱**。项目自动识别使用只读的宿主状态兼容适配；失效时可手动选择文件夹。[详细边界](docs/limitations.md)
+Markdown 编辑面向已有的 UTF-8 文档。PDF 暂不支持选文、OCR、表单与批注；Office、音视频和 Notebook 专用渲染尚不支持。完整的格式与大小限制见 [支持范围](docs/limitations.md)。
 
-## 开发与验证
+## 本地运行，明确保存
+
+渲染库随插件打包，无需运行时请求 CDN。插件不上传文件、不联网拉取图片，也不执行文档中的代码。主动加入对话的引用进入聊天草稿，随后由 Codex 处理。
+
+- **手动保存**：保存前校验原文件版本，检测到外部修改时拒绝覆盖。
+- **原文备份**：保存到 `~/.codex/backups/file-preview/`，供需要时恢复。
+- **批注暂存**：编号气泡与评论只保留在当前标签内存中，关闭标签前请先加入草稿。
+
+文件访问以用户选定文件或项目建立锚点，后续可浏览**同一磁盘**，并非限制在项目目录内的沙箱。详见 [访问边界与兼容性](docs/limitations.md)。
+
+## 常见问题
+
+<details>
+<summary><strong>它会替换 Codex 的内置文件查看器吗？</strong></summary>
+
+它是一个应用内插件，有自己的文件树、编辑和批注界面，通过文件的「打开」菜单进入。顶部原生标签通常仍显示插件名，当前文件名在插件工具栏中显示；新开或复用原生标签由宿主决定。
+
+</details>
+
+<details>
+<summary><strong>为什么项目目录有时没有自动识别？</strong></summary>
+
+自动识别依赖宿主提供的信息与本机状态适配，宿主升级后可能需要调整。可从项目下拉菜单手动选择文件夹，继续使用文件树。
+
+</details>
+
+<details>
+<summary><strong>支持哪些系统？是否需要 Node.js？</strong></summary>
+
+目前主要在 Windows 验证，尚未保证其他系统与每个 Codex 桌面版本的兼容性。日常使用不需要 Node.js；开发检查需要。Python 解释器与源码目录需要持续可用，移动后应重新构建并安装。
+
+</details>
+
+## 文档与贡献
+
+| 我想… | 从这里开始 |
+| :--- | :--- |
+| 安装、升级、回退或卸载 | [安装指南](docs/installation.md) |
+| 查看格式限制与已知边界 | [支持范围](docs/limitations.md) |
+| 理解服务、渲染器与编辑器 | [架构说明](docs/architecture.md) |
+| 反馈问题或提交代码 | [贡献指南](CONTRIBUTING.md) · [Issues](https://github.com/HuSiyue-ai/file-workspace/issues) |
+| 查看版本变更 | [更新记录](CHANGELOG.md) |
+
+<details>
+<summary><strong>本地开发与检查</strong></summary>
+
+需要 Python 3.12+ 与 Node.js。在仓库根目录运行：
 
 ```powershell
 python -m pip install -r requirements-dev.txt
+python build.py
 python check.py --require-pdf
 ```
 
-检查需要 Node.js。`check.py` 覆盖 Python 文件/路径/保存/目录测试、MCP 握手、JavaScript 状态回归、Markdown 解析和 vendor 校验；PDF 依赖未安装时可去掉 `--require-pdf` 运行其他测试。
+检查覆盖文件读写、路径、保存冲突、目录、MCP 握手、前端状态回归、Markdown 解析、PDF 与第三方资源完整性。未安装 PDF 依赖时，可用 `python check.py` 检查其他功能。
 
-`python dev_preview.py` 启动只监听 `127.0.0.1` 的隔离界面。该页面截获聊天草稿请求，不向真实聊天发送消息；它用于 UI 调试，不能代替桌面宿主兼容性测试。
+`python dev_preview.py` 提供仅监听 `127.0.0.1` 的隔离调试界面，聊天草稿请求会被截获，不发送给真实聊天。它不能替代实际 Codex 桌面端测试。
 
-## 状态与贡献
+</details>
 
-已经过本地长期使用与多轮迭代，仍需更多机器和宿主版本验证。优先保证稳定性，欢迎提供最小复现。[贡献说明](CONTRIBUTING.md) · [更新记录](CHANGELOG.md)
+## 许可与致谢
 
-由 **HuSiyue-ai** 基于实际使用场景设计、测试和维护，开发过程使用 AI 辅助。与 OpenAI 无隶属或背书关系。
+[MIT License](LICENSE) © HuSiyue-ai。第三方组件遵循各自许可证，详见 [第三方声明](THIRD-PARTY-NOTICES.md)。
 
-项目代码使用 [MIT](LICENSE)；第三方组件保留各自许可证，见 [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md)。
+感谢 [Marked](https://github.com/markedjs/marked)、[KaTeX](https://github.com/KaTeX/KaTeX)、[Mermaid](https://github.com/mermaid-js/mermaid)、[DOMPurify](https://github.com/cure53/DOMPurify)、[highlight.js](https://github.com/highlightjs/highlight.js) 与 [pypdfium2](https://github.com/pypdfium2-team/pypdfium2)。
+
+由 **HuSiyue-ai** 基于实际使用需求设计与维护，开发使用 AI 辅助。项目仍在持续迭代，与 OpenAI 无隶属或背书关系。

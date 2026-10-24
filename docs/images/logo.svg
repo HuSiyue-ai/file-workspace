@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 96 96" role="img" aria-labelledby="title">
+  <title id="title">file-workspace</title>
+  <rect x="4" y="4" width="88" height="88" rx="23" fill="#2563eb"/>
+  <rect x="22" y="23" width="52" height="50" rx="7" fill="none" stroke="#fff" stroke-width="3.5"/>
+  <path d="M55 25v46" stroke="#93c5fd" stroke-width="3"/>
+  <path d="M31 36h14m-14 12h17m-17 12h11" stroke="#fff" stroke-width="3.5" stroke-linecap="round"/>
+  <path d="M63 36h3m-3 12h3m-3 12h3" stroke="#bfdbfe" stroke-width="3.5" stroke-linecap="round"/>
+</svg>
