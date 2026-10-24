@@ -1,0 +1,14 @@
+* text=auto eol=lf
+*.py text eol=lf
+*.js text eol=lf
+*.mjs text eol=lf
+*.cjs text eol=lf
+*.json text eol=lf
+*.md text eol=lf
+*.yml text eol=lf
+*.html text eol=lf
+*.png binary
+*.pdf binary
+*.woff2 binary
+# Preserve upstream bytes and SRI / SHA-256 on every checkout.
+vendor/** -text

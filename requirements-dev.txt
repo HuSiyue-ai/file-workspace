@@ -1,0 +1,3 @@
+-r requirements-pdf.txt
+# Used only by the encrypted-PDF regression fixture, not by the plugin server.
+pypdf>=5,<7

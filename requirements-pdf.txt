@@ -1,0 +1,2 @@
+# Optional: only needed for PDF reading if the host has no compatible runtime.
+pypdfium2==5.14.0

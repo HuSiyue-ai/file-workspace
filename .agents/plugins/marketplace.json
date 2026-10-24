@@ -1,0 +1,20 @@
+{
+  "name": "markdown-preview-local",
+  "interface": {
+    "displayName": "file-workspace-local"
+  },
+  "plugins": [
+    {
+      "name": "markdown-math-preview",
+      "source": {
+        "source": "local",
+        "path": "./plugins/markdown-math-preview"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}

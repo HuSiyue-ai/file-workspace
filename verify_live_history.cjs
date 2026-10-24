@@ -1,0 +1,11 @@
+const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
+const c={};vm.createContext(c);vm.runInContext(fs.readFileSync(__dirname+'/edit-history.js','utf8'),c);const run=s=>vm.runInContext(s,c);
+const original='# 标题\n\n中文 😀 段落。\n\n- 一\n- 二\n\n尾部\n',from=original.indexOf('中文'),to=original.indexOf('- 一');
+c.original=original;c.from=from;c.to=to;
+assert.equal(run("replaceMarkdownRange(original,from,to,'修改 **文本**。\\n\\n')"),original.slice(0,from)+'修改 **文本**。\n\n'+original.slice(to));
+assert.throws(()=>run("replaceMarkdownRange(original,-1,to,'x')"));assert.throws(()=>run("replaceMarkdownRange(original,0,9999,'x')"));
+run("var h=new MarkdownEditHistory();h.record('a','first',{from:0,caret:0},0);h.record('ab','first',{from:0,caret:1},100);h.record('abc','second',{from:3,caret:0},200)");
+assert.equal(run("h.step('undo','abcd',null).text"),'abc');assert.equal(run("h.step('undo','abc',null).text"),'a');assert.equal(run("h.step('redo','a',null).text"),'abc');
+run("h.record('abc','new',null,1000)");assert.equal(run('h.redoStack.length'),0);
+run("var limited=new MarkdownEditHistory();for(let i=0;i<100;i++)limited.record(String(i),'x'+i,null,i*1000)");assert.equal(run('limited.undoStack.length'),60);
+console.log('PASS: exact UTF-16 source slices preserve emoji and untouched blocks; invalid ranges rejected; grouped cross-block undo/redo and bounded history');

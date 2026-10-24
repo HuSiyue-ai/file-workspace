@@ -1,0 +1,9 @@
+{
+  "version": "11.12.0",
+  "source": "https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.12.0/",
+  "sri": {
+    "highlight.min.js": "sha512-gzqHAlI1hVdzJ4wiQj/MkppDr6zgEdCoBsrXKRidcaZsSPvNQ3Fy5p7PpMt/8mltxTxMHj1Ur5NWbJdqIfpxgA==",
+    "languages/latex.min.js": "sha512-VoZYuNhCi1ei9YrQv0crX1msH5fQoZXDAT68kPjOmha4cNqM/r9KznHp7yXWAwUW7Tr6A3q90KAW4Xzd7eOeuA==",
+    "languages/powershell.min.js": "sha512-2rnUgpG0S1H3yVhfP2SfFDsxdhvtXRVQUPM7maeWHjsasRTpKORvI3amEXjIgVANjpD7t2tMPkV2ssRRqE5gkw=="
+  }
+}
