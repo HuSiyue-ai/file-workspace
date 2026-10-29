@@ -5,6 +5,7 @@ import os
 from dataclasses import dataclass
 from pathlib import Path
 from image_reader import filesystem_path, image_mime, IMAGE_TYPES
+from access_policy import checked_path
 
 MARKDOWN = {'.md', '.markdown'}
 TEXT = {'.txt', '.csv', '.tsv', '.log', '.json', '.yaml', '.yml', '.toml', '.py', '.pyw', '.pyi', '.js', '.mjs', '.cjs', '.ts', '.tsx', '.jsx',
@@ -22,7 +23,7 @@ class DirectoryAnchor:
 def selected_anchor(params):
     folder=params.get('_workspace_directory')
     if isinstance(folder, DirectoryAnchor):
-        anchor=folder.path.resolve(strict=True)
+        anchor=checked_path(folder.path).resolve(strict=True)
         if anchor.is_dir():return anchor
         raise ValueError('项目文件夹已不存在，请重新选择')
     metadata = (params.get('_meta') or {}).get('openai/resource') or {}
@@ -44,7 +45,7 @@ def selected_file(params, requested=None):
         target = filesystem_path(requested)
         if not target.is_absolute():
             target = (anchor if anchor.is_dir() else anchor.parent) / target
-        target = target.resolve(strict=True)
+        target = checked_path(target).resolve(strict=True)
     if os.path.normcase(target.anchor) != os.path.normcase(anchor.anchor):
         raise ValueError('只能预览当前文件所在磁盘的文件')
     if not target.is_file() or target.suffix.lower() not in SUPPORTED:

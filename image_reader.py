@@ -6,6 +6,7 @@ from html.parser import HTMLParser
 from pathlib import Path
 import re
 from urllib.parse import unquote, urlsplit
+from access_policy import checked_path
 
 MAX_IMAGE_BYTES = 20 * 1024 * 1024
 MAX_BATCH_BYTES = 32 * 1024 * 1024
@@ -26,7 +27,8 @@ def filesystem_path(value):
         value=value[1:]
     if value.startswith(('\\\\','//')):
         raise ValueError('暂不读取网络共享文件')
-    return Path(value)
+    path = Path(value)
+    return checked_path(path) if path.is_absolute() else path
 
 class ImageTags(HTMLParser):
     def __init__(self):
@@ -83,13 +85,13 @@ def local_path(source, document):
     else:
         url = urlsplit(raw)
         if url.scheme or url.netloc: raise ValueError('仅加载本地嵌入图片')
-        literal = document.parent / unquote(raw)
+        literal = checked_path(document.parent / unquote(raw))
         value = unquote(raw if literal.is_file() else url.path)
     value = re.sub(r'\\([()\[\] ])', r'\1', value)
     if value.startswith(('\\\\','//')): raise ValueError('暂不读取网络共享图片')
     path = filesystem_path(value)
     if not path.is_absolute(): path = document.parent / path
-    return path.resolve()
+    return checked_path(path.resolve())
 
 def image_mime(path, data):
     if path.suffix.lower() not in IMAGE_TYPES: raise ValueError('暂不支持此图片格式')

@@ -168,6 +168,9 @@ Try the [Python sample](examples/atlas-lab/src/reconstruct.py).
 
 ## Installation
 
+A [Linux/SSH preview](docs/linux-ssh-installation.md) is available. Its server backend is tested; desktop SSH discovery and actual side-panel rendering still require manual verification.
+
+
 **Primary tested environment: Windows.** Requires Python **3.12+**, Codex desktop with local plugins and MCP App file entries, and a CLI supporting `codex plugin`. Native dialogs require Tkinter. Node.js is not required for everyday use.
 
 ### 1. Clone, build, and check

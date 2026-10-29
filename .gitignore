@@ -1,5 +1,6 @@
 # Generated locally: includes machine-specific Python and plugin paths.
 /plugins/
+/.runtime/
 __pycache__/
 *.py[cod]
 .venv/

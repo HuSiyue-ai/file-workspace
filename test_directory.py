@@ -13,7 +13,7 @@ class DirectoryTests(unittest.TestCase):
     def tearDown(self):
         self.assertEqual(self.before,self.document.read_bytes());self.temp.cleanup()
     def call(self,arguments=None,path=None):
-        return list_directory({'arguments':arguments or {},'_meta':{'openai/resource':{'path':path or '/'+self.document.as_posix()}}})['structuredContent']
+        return list_directory({'arguments':arguments or {},'_meta':{'openai/resource':{'path':path or ('/' if self.document.drive else '')+self.document.as_posix()}}})['structuredContent']
     def test_current_folder_lazy_listing_and_sort(self):
         data=self.call();self.assertEqual(Path(data['directory']),self.root)
         self.assertEqual(data['entries'][0]['kind'],'directory')

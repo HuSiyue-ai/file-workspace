@@ -4,6 +4,7 @@ import secrets
 import subprocess
 import sys
 import time
+import os
 from pathlib import Path
 from file_reader import selected_file, DirectoryAnchor
 from project_context import project_roots, local_directory
@@ -35,6 +36,8 @@ class WorkspaceLauncher:
     def begin(self, kind='file'):
         self.prune()
         if kind not in ('file','directory'):raise ValueError('选择类型无效')
+        if os.environ.get('FILE_WORKSPACE_HEADLESS') == '1':
+            raise ValueError('SSH 服务器不使用图形文件选择框；请从当前项目文件树打开文件。')
         if self.picker:
             raise ValueError('已有文件选择框，请先选择或取消；关闭后可重试。')
         proc = subprocess.Popen([sys.executable, '-B', str(Path(__file__).with_name('native_picker.py')), kind],

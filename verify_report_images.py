@@ -18,7 +18,7 @@ def main():
     requests=[{'jsonrpc':'2.0','id':1,'method':'initialize','params':{'protocolVersion':'2025-11-25'}},
         {'jsonrpc':'2.0','method':'notifications/initialized'},
         {'jsonrpc':'2.0','id':2,'method':'tools/call','params':{'name':'read_markdown_images','arguments':{'sources':sources},
-            '_meta':{'openai/resource':{'path':'/'+document.as_posix()}}}}]
+            '_meta':{'openai/resource':{'path':('/' if document.drive else '')+document.as_posix()}}}}]
     server=Path(__file__).parent/'plugins/markdown-math-preview/server.py'
     process=subprocess.run([sys.executable,'-B',str(server)],input='\n'.join(json.dumps(request) for request in requests)+'\n',
         capture_output=True,text=True,encoding='utf-8',check=True,timeout=15)

@@ -10,7 +10,7 @@ import uuid
 from datetime import datetime, timezone
 from file_reader import selected_file, MARKDOWN, MAX_TEXT_BYTES
 
-BACKUP_ROOT = Path.home() / '.codex' / 'backups' / 'file-preview'
+BACKUP_ROOT = Path(os.environ.get('FILE_WORKSPACE_BACKUP_ROOT', str(Path.home() / '.codex' / 'backups' / 'file-preview')))
 SAVE_LOCK = threading.Lock()
 
 

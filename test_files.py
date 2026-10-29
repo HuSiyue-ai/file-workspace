@@ -16,7 +16,7 @@ class UnifiedFileTests(unittest.TestCase):
         self.picture=self.root/'图片.png';self.picture.write_bytes(b'\xff\xd8\xff\xe0jpeg-fixture')
         self.text=self.root/'说明.txt';self.text.write_text('说明\nline 2',encoding='utf-8')
     def params(self,args=None,anchor=None):
-        return {'arguments':args or {},'_meta':{'openai/resource':{'path':'/'+(anchor or self.anchor).as_posix()}}}
+        return {'arguments':args or {},'_meta':{'openai/resource':{'path':('/' if (anchor or self.anchor).drive else '')+(anchor or self.anchor).as_posix()}}}
     def test_switch_markdown_picture_text(self):
         for path,kind in [(self.anchor,'markdown'),(self.picture,'image'),(self.second,'markdown'),(self.text,'text')]:
             data=read_file(self.params({'path':str(path)}))['structuredContent'];self.assertEqual(data['kind'],kind)

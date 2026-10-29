@@ -51,7 +51,7 @@ class Handler(BaseHTTPRequestHandler):
     def do_POST(self):
         if self.path!='/call':self.send_error(404);return
         params=json.loads(self.rfile.read(int(self.headers['Content-Length'])))
-        params['_meta']={'openai/resource':{'path':'/'+SAMPLE.as_posix()}}
+        params['_meta']={'openai/resource':{'path':('/' if SAMPLE.drive else '')+SAMPLE.as_posix()}}
         try:result=dispatch('tools/call',params)
         except Exception as error:result={'isError':True,'content':[{'type':'text','text':str(error)}]}
         data=json.dumps(result,ensure_ascii=False).encode('utf-8');self.send_response(200);self.send_header('Content-Type','application/json');self.send_header('Content-Length',str(len(data)));self.end_headers();self.wfile.write(data)

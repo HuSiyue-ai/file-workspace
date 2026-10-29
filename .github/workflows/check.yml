@@ -1,4 +1,4 @@
-name: Checks
+name: Checks and Linux preview release
 on:
   push:
     branches: [main]
@@ -6,8 +6,16 @@ on:
 permissions:
   contents: read
 jobs:
-  windows:
-    runs-on: windows-latest
+  checks:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    env:
+      OMP_NUM_THREADS: '2'
+      OPENBLAS_NUM_THREADS: '2'
     steps:
       - uses: actions/checkout@v7
         with:
@@ -25,5 +33,44 @@ jobs:
         shell: pwsh
         run: |
           $env:FILE_WORKSPACE_PDF_PYTHON = (Get-Command python).Source
-          python build.py
           python check.py --require-pdf
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+  release:
+    needs: checks
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    concurrency:
+      group: linux-preview-release
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+      - name: Package and publish a new Linux preview
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          version="$(cat VERSION)"
+          [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+-linux\.[0-9]+$ ]] || exit 0
+          tag="v$version"
+          if gh release view "$tag" >/dev/null 2>&1; then
+            echo "Release $tag already exists; leaving it unchanged."
+            exit 0
+          fi
+          python package_release.py
+          gh release create "$tag" \
+            "dist/file-workspace-$version-linux-source.tar.gz" \
+            dist/SHA256SUMS.txt \
+            --target "$GITHUB_SHA" \
+            --title "file-workspace $tag — Linux / SSH preview" \
+            --notes-file "docs/releases/$version.md" \
+            --prerelease --latest=false

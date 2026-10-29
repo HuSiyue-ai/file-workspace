@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.9.0-linux.1 — 2026-10-29 (Linux / SSH preview)
+
+- Add persistent headless/project-root/allowed-root build options and honor CODEX_HOME for server project discovery.
+- Constrain file, image, directory and save access to an optional configured root, including symlink escape checks.
+- Disable native GUI pickers explicitly on headless hosts; retain the project file tree.
+- Fix Windows-only paths in cross-platform tests and debugging harnesses.
+- Add Linux/Windows CI and a source-only Linux preview release with SHA-256 checksums.
+- Keep desktop SSH menu discovery and actual UI rendering explicitly pending manual verification.
+
 ## 1.8.2 — 2026-10-24
 
 - Declare Pillow explicitly in the optional PDF dependencies; fresh environments need it for page-to-image conversion.

@@ -29,7 +29,7 @@ class FakeProcess:
 
 class LauncherTests(unittest.TestCase):
     def setUp(self):
-        self.temp = TemporaryDirectory()
+        self.temp = TemporaryDirectory(dir=Path(__file__).parent)
         self.addCleanup(self.temp.cleanup)
         self.path = Path(self.temp.name)/'中文 空格.md'
         self.path.write_text('# 原文\n', encoding='utf-8')

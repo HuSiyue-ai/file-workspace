@@ -29,7 +29,7 @@ def conversation_cwd(params, state_root=None):
     thread_id=meta.get('threadId') or meta.get('thread_id')
     if not isinstance(thread_id,str) or not re.fullmatch(r'[0-9a-fA-F]{8}(?:-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}',thread_id):
         return None
-    root=Path(state_root) if state_root is not None else Path.home()/'.codex'
+    root=Path(state_root) if state_root is not None else Path(os.environ.get('CODEX_HOME', str(Path.home()/'.codex')))
     databases=sorted((p for p in root.glob('state_*.sqlite') if re.fullmatch(r'state_\d+\.sqlite',p.name)),
                      key=lambda p:int(p.stem.split('_')[-1]), reverse=True)
     for path in databases[:3]:
@@ -45,6 +45,14 @@ def conversation_cwd(params, state_root=None):
 
 
 def project_roots(params, state_root=None):
+    roots = _project_roots(params, state_root)
+    if roots:
+        return roots
+    fallback = os.environ.get('FILE_WORKSPACE_PROJECT_ROOT')
+    return [local_directory(fallback)] if fallback else []
+
+
+def _project_roots(params, state_root=None):
     """Prefer the assigned project's ordered roots over its runtime cwd.
 
     Never use the global selected project: another app window may change it.
@@ -52,7 +60,7 @@ def project_roots(params, state_root=None):
     meta=params.get('_meta') or {}
     thread_id=meta.get('threadId') or meta.get('thread_id')
     if not isinstance(thread_id,str) or not re.fullmatch(r'[0-9a-fA-F]{8}(?:-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}',thread_id):return []
-    root=Path(state_root) if state_root is not None else Path.home()/'.codex'
+    root=Path(state_root) if state_root is not None else Path(os.environ.get('CODEX_HOME', str(Path.home()/'.codex')))
     try:
         with (root/'.codex-global-state.json').open('rb') as stream:data=stream.read(8*1024*1024+1)
         if len(data)>8*1024*1024:raise ValueError('state too large')

@@ -13,7 +13,7 @@ class MarkdownSaveTests(unittest.TestCase):
         self.root=Path(self.temp.name);self.path=self.root/'中文 空格.md';self.path.write_bytes(b'\xef\xbb\xbf# old\r\nline\r\n')
         self.backups=self.root/'backups';self.mock=patch.object(file_writer,'BACKUP_ROOT',self.backups);self.mock.start();self.addCleanup(self.mock.stop)
     def params(self,text='# 新标题\n\n公式 $E=mc^2$。\n',revision=None,path=None):
-        return {'arguments':{'path':str(path or self.path),'text':text,'revision':revision or hashlib.sha256(self.path.read_bytes()).hexdigest()},'_meta':{'openai/resource':{'path':'/'+self.path.as_posix()}}}
+        return {'arguments':{'path':str(path or self.path),'text':text,'revision':revision or hashlib.sha256(self.path.read_bytes()).hexdigest()},'_meta':{'openai/resource':{'path':('/' if self.path.drive else '')+self.path.as_posix()}}}
     def test_revision_backup_bom_crlf_repeat_save(self):
         original=self.path.read_bytes();read=read_file(self.params())['structuredContent'];self.assertEqual(read['revision'],hashlib.sha256(original).hexdigest())
         result=file_writer.save_markdown(self.params())['structuredContent'];self.assertTrue(result['saved'])

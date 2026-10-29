@@ -168,7 +168,7 @@ Mermaid 代码块直接变成文档中的图，不需要另外弹出一个绘图
 
 ## 安装
 
-**主要验证环境：Windows。** 需要 Python **3.12+**、支持本地插件与 MCP App 文件入口的 Codex 桌面端，以及支持 `codex plugin` 的 CLI。文件选择对话框需要 Tkinter；日常使用不需要 Node.js。
+**桌面界面主要验证环境：Windows；Linux/SSH 后端已有预览版。** 见 [Linux/SSH 安装指南](docs/linux-ssh-installation.md) 和 [发布记录](docs/releases/1.9.0-linux.1.md)。远程桌面入口与实际右侧渲染仍需按桌面版本验收。 需要 Python **3.12+**、支持本地插件与 MCP App 文件入口的 Codex 桌面端，以及支持 `codex plugin` 的 CLI。文件选择对话框需要 Tkinter；日常使用不需要 Node.js。
 
 ### 1. 获取、构建、检查
 

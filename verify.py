@@ -51,7 +51,7 @@ class Handler(BaseHTTPRequestHandler):
         if self.path!='/images':self.send_error(404);return
         params=json.loads(self.rfile.read(int(self.headers['Content-Length'])))
         # Match the real desktop file tab's /C:/... host metadata, not a Python-native path.
-        params['_meta']={'openai/resource':{'path':'/'+SAMPLE.resolve().as_posix()}}
+        params['_meta']={'openai/resource':{'path':('/' if SAMPLE.drive else '')+SAMPLE.resolve().as_posix()}}
         try:result=dispatch('tools/call',params)
         except Exception as error:result={'isError':True,'content':[{'type':'text','text':str(error)}]}
         data=json.dumps(result,ensure_ascii=False).encode('utf-8')

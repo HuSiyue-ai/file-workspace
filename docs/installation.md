@@ -2,7 +2,7 @@
 
 ## 已验证环境
 
-Windows 本地桌面环境，Python 3.12。其他系统与云端线程尚未验证。桌面宿主需要支持 MCP App 文件入口、文件路径元数据和插件目录。
+Windows 本地桌面环境，Python 3.12。Linux/SSH 后端的预览版安装与验证边界见 [Linux/SSH 指南](linux-ssh-installation.md)；远程桌面界面和云端线程尚未验证。桌面宿主需要支持 MCP App 文件入口、文件路径元数据和插件目录。
 
 ## 为什么需要本地构建
 

@@ -40,11 +40,11 @@ class ImageReaderTests(unittest.TestCase):
         self.assertIn('error',results[0]);self.assertIn('blob',results[1])
     def test_host_windows_path_formats(self):
         # The real file tab uses /C:/... rather than Python's C:/... Windows path.
-        for path in [str(self.document),'/'+self.document.as_posix(),self.document.as_uri()]:
+        for path in [str(self.document),('/' if self.document.drive else '')+self.document.as_posix(),self.document.as_uri()]:
             with self.subTest(path=path):
                 self.assertIn('blob',self.call(['图片样例/中文 空格.png'],path)[0])
     def test_slash_prefixed_windows_image_path(self):
-        source='/'+self.png.as_posix()
+        source=('/' if self.png.drive else '')+self.png.as_posix()
         self.assertIn('blob',self.call([source])[0])
     def test_reject_unreferenced_and_non_image(self):
         extra=self.root/'extra.png';extra.write_bytes(self.png.read_bytes());self.assertIn('error',self.call(['extra.png'])[0])

@@ -19,7 +19,7 @@ OTHER='aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'
 
 class ProjectStartTests(unittest.TestCase):
     def setUp(self):
-        self.temp=TemporaryDirectory();self.addCleanup(self.temp.cleanup)
+        self.temp=TemporaryDirectory(dir=Path(__file__).parent);self.addCleanup(self.temp.cleanup)
         self.root=Path(self.temp.name);self.project=self.root/'项目 空格';self.project.mkdir()
         self.database=self.root/'state_5.sqlite'
         conn=sqlite3.connect(self.database)
