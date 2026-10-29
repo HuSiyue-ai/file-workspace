@@ -1,5 +1,13 @@
 # Changelog
 
+## Documentation refresh — 2026-10-30
+
+- Rebuild the Chinese/English homepages around platform selection, installation and first use.
+- Preserve feature captures in a dedicated gallery; use a lightweight vector wordmark and one product preview on the homepage.
+- Add bilingual documentation indexes, user guides, troubleshooting and compatibility pages.
+- Refresh Linux preview release notes without replacing the original tag or verified downloads.
+- Check documentation links/anchors/images in CI and add structured issue templates.
+
 ## 1.9.0-linux.1 — 2026-10-29 (Linux / SSH preview)
 
 - Add persistent headless/project-root/allowed-root build options and honor CODEX_HOME for server project discovery.

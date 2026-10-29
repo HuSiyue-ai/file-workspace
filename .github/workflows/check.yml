@@ -33,6 +33,8 @@ jobs:
         shell: pwsh
         run: |
           $env:FILE_WORKSPACE_PDF_PYTHON = (Get-Command python).Source
+          python verify_docs.py
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           python check.py --require-pdf
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
   release:
@@ -63,7 +65,8 @@ jobs:
           [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+-linux\.[0-9]+$ ]] || exit 0
           tag="v$version"
           if gh release view "$tag" >/dev/null 2>&1; then
-            echo "Release $tag already exists; leaving it unchanged."
+            gh release edit "$tag" --notes-file "docs/releases/$version.md"
+            echo "Updated release notes for $tag; tag and assets unchanged."
             exit 0
           fi
           python package_release.py

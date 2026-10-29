@@ -1,0 +1,22 @@
+name: Feature request / 功能建议
+description: Describe a concrete workflow to improve / 描述想改善的具体使用流程
+title: "[Feature] "
+body:
+  - type: textarea
+    id: workflow
+    attributes:
+      label: Current workflow / 当前操作流程
+      description: "What are you trying to do, and where do you get stuck? 说明文件类型和本机或 SSH 场景。"
+    validations:
+      required: true
+  - type: textarea
+    id: change
+    attributes:
+      label: Suggested improvement / 希望怎样改进
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives or examples / 替代方式或示例
+      description: "Use fictional examples only / 只使用虚构示例。"

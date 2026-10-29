@@ -1,0 +1,43 @@
+name: Bug report / 问题反馈
+description: Report a reproducible problem with a fictional sample / 用虚构样例反馈可复现问题
+title: "[Bug] "
+body:
+  - type: markdown
+    attributes:
+      value: "Please check the troubleshooting guide first. 不要上传私密文档、凭据或完整环境变量。"
+  - type: dropdown
+    id: environment
+    attributes:
+      label: Environment / 使用场景
+      options:
+        - Windows local desktop / Windows 本机
+        - Linux via SSH / Linux SSH 项目
+        - Linux graphical desktop / Linux 图形桌面
+        - macOS or another host / 其他
+    validations:
+      required: true
+  - type: textarea
+    id: versions
+    attributes:
+      label: Versions / 版本
+      description: "OS, desktop app, codex --version, Python, plugin version. 请注明桌面端与服务器分别使用的环境。"
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce / 复现步骤
+      description: "Include the entrypoint used and a minimal fictional sample. 请说明从哪个入口打开。"
+    validations:
+      required: true
+  - type: textarea
+    id: results
+    attributes:
+      label: Expected and actual results / 预期与实际结果
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Screenshots or relevant diagnostics / 截图或必要诊断
+      description: "Crop/redact personal paths and data. 不要附带令牌或完整配置备份。"

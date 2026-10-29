@@ -1,4 +1,6 @@
-# Architecture
+# 架构与源码导航
+
+[文档首页](README.md) · [贡献指南](../CONTRIBUTING.md) · [兼容性](compatibility.md)
 
 ```text
 Codex file entry / launcher
@@ -26,6 +28,10 @@ Codex file entry / launcher
 - `examples/`：可公开的虚构演示数据。
 - `plugins/`：构建输出，包含机器相关配置，已忽略。
 - `.agents/plugins/marketplace.json`：本地安装目录清单。
+- `VERSION`：服务与插件清单共同使用的版本。
+- `access_policy.py`：可选目录边界检查。
+- `.runtime/server-env.json`：本机项目、边界与 headless 配置；忽略发布。
+- `verify_docs.py`：文档相对链接、锚点与配图引用检查。
 
 前端通过 MCP Apps postMessage 与宿主通信。文件只在用户选择预览时读取；创建目录和保存文档使用明确的写工具。PDF 每次操作运行独立进程，避免 PDFium 线程问题。
 

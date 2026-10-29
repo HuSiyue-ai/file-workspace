@@ -1,60 +1,96 @@
-# Installation, updates and rollback
+# 安装与维护
 
-## 已验证环境
+[文档首页](README.md) · [English](installation.en.md) · [Linux / SSH](linux-ssh-installation.md) · [遇到问题](troubleshooting.md)
 
-Windows 本地桌面环境，Python 3.12。Linux/SSH 后端的预览版安装与验证边界见 [Linux/SSH 指南](linux-ssh-installation.md)；远程桌面界面和云端线程尚未验证。桌面宿主需要支持 MCP App 文件入口、文件路径元数据和插件目录。
+## 先选运行环境
 
-## 为什么需要本地构建
+| 环境 | 使用哪份说明 |
+| :--- | :--- |
+| 电脑上运行 Codex，文件和 Python 也在同一台 Windows 电脑 | 继续阅读下方 Windows 步骤 |
+| 电脑上的 Codex 连接 Linux 服务器，浏览服务器文件 | [Linux / SSH 安装](linux-ssh-installation.md) |
+| macOS、云端线程或其他宿主 | 先阅读[兼容性](compatibility.md)，当前未验证 |
 
-`build.py` 将 vendor 内的资源组合为离线 `viewer.html`，并把当前 Python 的路径和插件目录写入 `plugins/markdown-math-preview/.mcp.json`。此文件只适用于当前安装位置，不提交 Git。
+## 准备条件
 
-把仓库放到稳定目录后再构建；移动仓库、删除 Python 虚拟环境或换电脑后，需要重新构建和安装。Python 环境本身必须持续可用。
+- **Python 3.12+**，以及支持 `codex plugin marketplace add` 和 `codex plugin add` 的 CLI。
+- 桌面宿主支持本地插件、MCP App 文件入口和文件路径元数据。命令存在不等于桌面入口一定可用。
+- 将源码放在长期保留的位置。构建会把 Python 和服务路径写入本机配置；移动源码、删除环境或更换机器后，需要重新构建并安装。
 
-注册的是 **仓库根目录**（即含 `.agents/plugins/marketplace.json` 的目录），不是 `plugins/` 子目录。marketplace 中的 `source.path` 相对于仓库根目录解析。
+Markdown/图片核心功能使用 Python 标准库与随包提供的离线资源。Node.js 仅开发检查需要；PDF 有可选依赖。
 
-## 安装
+## Windows 本机
 
-按 README 克隆、构建、检查和安装。也可下载源码 ZIP 解压后执行相同步骤（跳过 git clone）。核心构建不下载资源、不改 Codex 设置；注册/安装命令才修改插件配置。
-
-显示名是 `file-workspace`。为保留已有文件关联，内部标识继续使用：
-
-- plugin: `markdown-math-preview`
-- marketplace: `markdown-preview-local`
-- selector: `markdown-math-preview@markdown-preview-local`
-
-已有同标识的本地旧版时，新安装会更新相同插件，不建议把两份来源同时注册。先保留旧来源和已知可用版本，确认新版本后再自行清理。
-
-## PDF
-
-`python doctor.py` 只检查，不安装软件或修改设置。如果 PDF 不可用，请在目标解释器中安装 `requirements-pdf.txt`。显式指定运行环境时，可在构建生成的 `.mcp.json` 的服务 `env` 中加入 `FILE_WORKSPACE_PDF_PYTHON`，值为解释器完整路径，随后重新安装并重启宿主。不要把自己的生成配置提交到仓库。
-
-文件选择框打不开时，检查 Python 是否包含 Tkinter；仍可从宿主原生文件标签的“打开”菜单进入。
-
-## 升级
-
-先保存正在编辑的文档，再关闭旧标签；记录 `git rev-parse HEAD` 或保留旧版副本。更新源码后：
+在 PowerShell 中确认 Python 版本，再创建独立环境：
 
 ```powershell
-git pull --ff-only
-python build.py
+python --version
+git clone https://github.com/HuSiyue-ai/file-workspace.git
+cd file-workspace
+python -m venv .venv
+.venv\Scripts\python.exe build.py
+.venv\Scripts\python.exe doctor.py
+```
+
+也可下载源码归档并解压到稳定目录，然后从 `python -m venv .venv` 开始。已有源码时不要重复克隆到同一个目录。
+
+在**仓库根目录**注册并安装：
+
+```powershell
+codex plugin marketplace add .
 codex plugin add markdown-math-preview@markdown-preview-local
 ```
 
-完整退出宿主（包括托盘）后重开。旧标签不会自动换成新 HTML。
+注册目标是包含 `.agents/plugins/marketplace.json` 的仓库根目录，不是 `plugins/`。应用中显示 **file-workspace**；命令保留兼容用的内部标识。
+
+完整退出 Codex（包括托盘进程），重启并打开项目。右侧打开 Markdown，从文件标签的“打开”菜单选择 **file-workspace**。也可使用宿主提供的新标签插件入口；具体入口依版本而异。[第一次使用 →](usage.md)
+
+> `doctor.py` 只检查，不自动安装软件或修改 Codex 设置。`built: true` 表示产物存在，不证明桌面界面已加载。
+
+## 可选：PDF 预览
+
+在刚才的同一个环境中安装依赖，再检查：
+
+```powershell
+.venv\Scripts\python.exe -m pip install -r requirements-pdf.txt
+.venv\Scripts\python.exe doctor.py
+```
+
+PDF 通过独立工作进程处理，需要 `pypdfium2` 和 `Pillow`。插件会优先选择存在的 Codex PDF Python 路径，否则使用构建时的 Python；以 `doctor.py` 输出的 `pdfPython` 和 `pdfAvailable` 为准。若选中了不合适的解释器，可在生成的 `.mcp.json` 服务 `env` 中设置 `FILE_WORKSPACE_PDF_PYTHON` 的绝对路径，随后重新安装。下一次构建会重建 `.mcp.json`，届时需要重新应用这一手动设置。
+
+Linux 对应命令见 [Linux / SSH 指南](linux-ssh-installation.md#可选pdf-与开发检查)。PDF 以图片页面展示，当前不支持选文、OCR 或 PDF 批注。
+
+## 升级
+
+先保存文档并关闭旧标签；保留当前提交号 `git rev-parse HEAD` 和本机配置。使用原来的 Python 环境重新构建：
+
+```powershell
+git pull --ff-only
+.venv\Scripts\python.exe build.py
+.venv\Scripts\python.exe doctor.py
+codex plugin add markdown-math-preview@markdown-preview-local
+```
+
+Linux 将 `.venv\Scripts\python.exe` 换为 `.venv/bin/python`。已有 `.runtime/server-env.json` 的构建会复用其中的项目/目录边界/headless 设置。更新遇到本地修改时先处理差异，不强制覆盖。
+
+完整退出桌面端后重开；旧标签不会自动加载新的 HTML。同标识插件会被更新，不要同时注册多份来源。
 
 ## 回退
 
-在源码副本中切到之前验证过的提交或标签，重新执行构建和安装，再完整重启。请不要用 `git reset --hard` 丢弃自己的改动；可在另一目录检出旧版。文档保存备份与插件源码回退是两件事，备份不会因版本回退而自动覆盖原文。
+保留现有源码，在另一个稳定目录检出已知可用的提交或标签，重新构建后注册该来源并安装。先核对 `codex plugin marketplace list`，确保同一 marketplace 指向预期位置。不要使用 `git reset --hard` 丢弃修改。
+
+插件版本回退不会自动还原文档。原文备份默认位于 `~/.codex/backups/file-preview/`；备份目录的自定义方式和访问边界见 [Linux 指南](linux-ssh-installation.md#目录边界与备份)。
 
 ## 卸载
 
-先保存并关闭插件标签，再运行：
+保存并关闭插件标签后：
 
 ```powershell
 codex plugin remove markdown-math-preview@markdown-preview-local
 codex plugin marketplace remove markdown-preview-local
 ```
 
-卸载不会替你删除源码副本或 `~/.codex/backups/file-preview/` 中的文档备份。确认不再需要后自行清理。
+源码、Python 环境和文档备份不会被这两条命令删除。确认不再需要后再自行处理；保留有用的文档备份。
 
-安装和 marketplace 布局依据 [OpenAI 官方插件打包说明](https://developers.openai.com/plugins/build/plugins)。GitHub 源码分发与 OpenAI 官方插件目录上架是不同的流程；本仓库不表示已经通过官方目录审核。
+## 安装机制
+
+`build.py` 将随包的 vendor 资源组合为离线 `viewer.html`，并生成只适合本机的 `.mcp.json`。GitHub 源码分发、本地插件注册与官方插件目录上架是不同步骤；本仓库不表示已通过官方目录审核。机制参考 [OpenAI 官方插件说明](https://developers.openai.com/plugins/build/plugins)。

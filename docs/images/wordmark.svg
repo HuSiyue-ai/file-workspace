@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="240" viewBox="0 0 1080 240" role="img" aria-labelledby="title desc">
+  <title id="title">file-workspace</title>
+  <desc id="desc">Read. Edit. Explore. A file workspace for the Codex side panel.</desc>
+  <defs><linearGradient id="paper" x2="1" y2="1"><stop stop-color="#f0f8f5"/><stop offset="1" stop-color="#f3f1fb"/></linearGradient></defs>
+  <rect x="1" y="1" width="1078" height="238" rx="24" fill="url(#paper)" stroke="#d8e7e1"/>
+  <g transform="translate(52 57)">
+    <rect x="4" y="14" width="98" height="110" rx="14" fill="#d9e9e2"/>
+    <rect width="98" height="110" rx="14" fill="#fff" stroke="#87b4a4" stroke-width="2"/>
+    <path d="M24 29h47M24 45h34M24 69h47M24 85h26" stroke="#32866c" stroke-width="6" stroke-linecap="round"/>
+    <circle cx="86" cy="95" r="21" fill="#7561c7"/>
+    <path d="m78 103 3-10 10-10 7 7-10 10z" fill="#fff"/>
+  </g>
+  <text x="194" y="117" fill="#183f35" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="66" font-weight="700" letter-spacing="-2">file-workspace</text>
+  <text x="198" y="164" fill="#63776f" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="24" letter-spacing="4">READ. EDIT. EXPLORE.</text>
+  <path d="M937 70v100" stroke="#d8dfeb" stroke-width="2"/>
+  <rect x="961" y="75" width="62" height="16" rx="8" fill="#d2e7de"/>
+  <rect x="961" y="106" width="42" height="16" rx="8" fill="#dcd6f0"/>
+  <rect x="961" y="137" width="54" height="16" rx="8" fill="#d2e7de"/>
+</svg>
