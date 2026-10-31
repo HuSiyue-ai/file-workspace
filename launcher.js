@@ -1,5 +1,7 @@
 // Open the conversation project tree without requiring an initial file.
 let launcherBusy=false,launcherConnected=false,launcherTicket=null,launcherHomeStarted=false;
+let launcherHomeTimer=null,launcherHomeEpoch=0,launcherHomePending=false,launcherHomeAttempt=0,launcherHomeFallbackUsed=false;
+const launcherHomeRetryDelays=[500,1000,2000,4000];
 const launchHome=document.getElementById('launch-home');
 function unwrapWorkspace(result){
   if(result.isError)throw new Error(result.content?.find(x=>x.type==='text')?.text||'工作区操作失败');
@@ -19,24 +21,42 @@ function showEmptyWorkspace(caption){
   document.getElementById('launch-caption').textContent=caption;
   status.textContent='';
 }
-async function showLauncherHome(){
-  if(anchorFile||viewerDisposed||launcherHomeStarted)return;
-  launcherHomeStarted=true;
-  showEmptyWorkspace('正在载入当前项目的文件树…');
+function cancelWorkspaceHome(){
+  ++launcherHomeEpoch;
+  if(launcherHomeTimer!==null){clearTimeout(launcherHomeTimer);launcherHomeTimer=null;}
+}
+async function showLauncherHome(retry=false){
+  if(anchorFile||viewerDisposed||launcherBusy||launcherHomePending||(!retry&&launcherHomeStarted))return;
+  if(launcherHomeTimer!==null){clearTimeout(launcherHomeTimer);launcherHomeTimer=null;}
+  if(!launcherHomeStarted){launcherHomeStarted=true;showEmptyWorkspace('正在载入当前项目的文件树…');}
+  const epoch=launcherHomeEpoch;launcherHomePending=true;
   try{
-    const data=unwrapWorkspace(await request('tools/call',{name:'get_workspace_start',arguments:{}}));
-    if(viewerDisposed||anchorFile)return;
+    const allowSelectedProject=!launcherHomeFallbackUsed;launcherHomeFallbackUsed=true;
+    const data=unwrapWorkspace(await request('tools/call',{name:'get_workspace_start',arguments:{allowSelectedProject}}));
+    if(viewerDisposed||anchorFile||launcherBusy||epoch!==launcherHomeEpoch)return;
     if(data.directory&&data.session){setWorkspaceRootChoices(data.roots||[data]);await openWorkspaceDirectory(data);}
     else{
-      document.getElementById('launch-caption').textContent='未取得当前项目路径，请选择项目文件夹。';
+      document.getElementById('launch-caption').textContent='正在等待当前项目路径，也可以手动选择文件夹。';
       setDirectoryVisible(true,'files');
     }
   }catch(e){
-    if(!viewerDisposed&&!anchorFile){document.getElementById('launch-caption').textContent='点击“打开文件夹”载入项目文件树。';pickerNotice(e.message,true);setDirectoryVisible(true,'files');}
+    if(!viewerDisposed&&!anchorFile&&!launcherBusy&&epoch===launcherHomeEpoch){document.getElementById('launch-caption').textContent='点击“打开文件夹”载入项目文件树。';pickerNotice(e.message,true);setDirectoryVisible(true,'files');}
+  }finally{
+    launcherHomePending=false;
+    if(!viewerDisposed&&!anchorFile&&!launcherBusy&&epoch===launcherHomeEpoch){
+      const delay=launcherHomeRetryDelays[launcherHomeAttempt++];
+      if(delay!==undefined)launcherHomeTimer=setTimeout(()=>{launcherHomeTimer=null;showLauncherHome(true);},delay);
+      else document.getElementById('launch-caption').textContent='暂未取得当前项目路径，请从项目菜单选择文件夹，或点击文件树刷新重试。';
+    }
   }
+}
+function retryWorkspaceHome(){
+  if(!launcherConnected||viewerDisposed||anchorFile||launcherBusy)return;
+  launcherHomeAttempt=0;return showLauncherHome(true);
 }
 async function openWorkspaceDirectory(data){
   if(!data.directory?.resourceUri||typeof data.session!=='string')throw new Error('没有收到项目文件夹，请重新选择。');
+  cancelWorkspaceHome();pickerNotice('');
   cancelPendingFilePreview();++readGeneration;
   setDirectoryVisible(false,'files');
   rememberWorkspaceRoot(data);
@@ -49,6 +69,7 @@ async function openWorkspaceDirectory(data){
   document.getElementById('document-area').scrollTo?.({top:0,behavior:'instant'});
 }
 function launcherFileOpened(){
+  cancelWorkspaceHome();
   loadWorkspaceRootChoices();
   launchHome.hidden=true;
   document.getElementById('directory-toggle').hidden=false;
@@ -66,6 +87,7 @@ function syncPickerButtons(){
 async function chooseWorkspaceFile(kind='file'){
   if(launcherBusy||!launcherConnected||viewerDisposed)return;
   if(!await confirmEditorNavigation())return;
+  cancelWorkspaceHome();
   launcherBusy=true;syncPickerButtons();document.getElementById('viewer-options').open=false;
   pickerNotice(kind==='directory'?'请在本机选择项目文件夹。':'请在本机选择文件；取消后会保留当前页面。');
   try{
@@ -92,6 +114,7 @@ async function chooseWorkspaceFile(kind='file'){
   }
 }
 function cancelWorkspacePicker(){
+  cancelWorkspaceHome();
   if(launcherTicket)request('tools/call',{name:'cancel_workspace_file_selection',arguments:{ticket:launcherTicket}}).catch(()=>{});
   launcherTicket=null;
 }

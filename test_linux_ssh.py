@@ -36,6 +36,15 @@ class SshTests(unittest.TestCase):
         self.assertEqual(result['directory']['path'], str(self.root))
         self.assertTrue(result['session'])
 
+    def test_new_launcher_preserves_configured_headless_project(self):
+        with patch('workspace_launcher.selected_project_roots') as selected:
+            launcher=WorkspaceLauncher()
+            result=launcher.start({'arguments':{'allowSelectedProject':True}})['structuredContent']
+            self.assertEqual(result['directory']['path'],str(self.root))
+            selected.assert_not_called()
+            scoped=launcher.authorize({'arguments':{'workspaceSession':result['session']}})
+            self.assertEqual(list_directory(scoped)['structuredContent']['directory'],str(self.root))
+
     def test_codex_home_and_current_thread_take_precedence(self):
         state = self.base / 'codex-state'
         state.mkdir()

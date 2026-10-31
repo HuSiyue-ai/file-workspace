@@ -85,7 +85,8 @@ CANCEL_TOOL = {**POLL_TOOL, 'name': 'cancel_workspace_file_selection', 'title': 
                'description': 'Cancel only the pending native picker owned by this UI ticket.'}
 
 START_TOOL = {**HOME_TOOL, 'name':'get_workspace_start', 'title':'取得当前对话的项目文件夹',
-              'description':'Resolve only the host-supplied conversation ID to its local project directory for the workspace file tree; no file contents are read.',
+              'description':'Resolve the host-supplied conversation project; an empty launcher may opt into the desktop selected-project fallback once when a new conversation has no saved context. No file contents are read.',
+              'inputSchema':{'type':'object','properties':{'allowSelectedProject':{'type':'boolean'}},'additionalProperties':False},
               '_meta':{'ui':{'visibility':['app']}}}
 
 def dispatch(method, params):

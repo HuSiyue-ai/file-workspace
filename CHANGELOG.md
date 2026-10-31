@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.9.0-linux.2 — 2026-10-31
+
+- Populate a new conversation's launch tree from the desktop selected project when no saved conversation context exists. This fallback is read once per launcher, and never replaces a known conversation project or a manual selection.
+- Retry late conversation context for a bounded startup period; file-tree refresh can retry without following another window's selected project.
+- Cancel pending startup work when opening a file, choosing a folder or closing the viewer.
+- Preserve Linux headless startup, configured project/allowed roots and CODEX_HOME when incorporating the Windows-local 1.8.3 fix.
+
 ## Documentation refresh — 2026-10-30
 
 - Rebuild the Chinese/English homepages around platform selection, installation and first use.

@@ -1,7 +1,8 @@
 """Locate the requesting conversation's ordered project roots, then its cwd.
 
-The local state schema is an optional compatibility adapter, read-only. If it is
-unavailable, require explicit folder selection rather than guessing a directory.
+The local state schema is an optional compatibility adapter, read-only. A fresh
+launcher may explicitly opt into the desktop's selected project once; existing
+conversation assignments always take precedence over that global fallback.
 """
 from pathlib import Path
 import re
@@ -86,3 +87,40 @@ def _project_roots(params, state_root=None):
 def current_project(params, state_root=None):
     roots=project_roots(params,state_root)
     return roots[0] if roots else None
+
+
+def selected_project_roots(params, state_root=None):
+    """One-shot draft fallback. Never follow this global selection after loading.
+
+    Drafts use an ephemeral MCP host thread with no saved project/cwd. Do not
+    replace known project, projectless or remote membership with another window's
+    selection, and do not accept an arbitrary directory from UI arguments.
+    """
+    meta=params.get('_meta') or {}
+    thread_id=meta.get('threadId') or meta.get('thread_id')
+    if thread_id is not None and (not isinstance(thread_id,str) or not re.fullmatch(r'[0-9a-fA-F]{8}(?:-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}',thread_id)):
+        return []
+    root=Path(state_root) if state_root is not None else Path(os.environ.get('CODEX_HOME', str(Path.home()/'.codex')))
+    try:
+        with (root/'.codex-global-state.json').open('rb') as stream:data=stream.read(8*1024*1024+1)
+        if len(data)>8*1024*1024:return []
+        state=json.loads(data.decode('utf-8'))
+        if thread_id is not None:
+            if thread_id in state.get('thread-project-assignments',{}):return []
+            if thread_id in state.get('projectless-thread-ids',[]):return []
+            if state.get('thread-project-membership-host-ids',{}).get(thread_id,'local')!='local':return []
+        selected=state.get('selected-project')
+        if not isinstance(selected,dict) or selected.get('type')!='local':return []
+        project_id=selected.get('projectId')
+        if not isinstance(project_id,str) or not project_id:return []
+        project=state.get('local-projects',{}).get(project_id)
+        paths=project.get('rootPaths') if isinstance(project,dict) else None
+        if not isinstance(paths,list):return []
+        result=[];seen=set()
+        for value in paths[:32]:
+            try:
+                path=local_directory(value);key=os.path.normcase(str(path))
+                if key not in seen:result.append(path);seen.add(key)
+            except (ValueError,OSError,TypeError):continue
+        return result
+    except (OSError,ValueError,AttributeError,TypeError):return []

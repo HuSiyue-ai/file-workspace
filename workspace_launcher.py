@@ -7,7 +7,7 @@ import time
 import os
 from pathlib import Path
 from file_reader import selected_file, DirectoryAnchor
-from project_context import project_roots, local_directory
+from project_context import project_roots, selected_project_roots, local_directory
 
 SESSION_KEY = 'workspaceSession'
 MAX_AGE = 24 * 60 * 60
@@ -80,6 +80,10 @@ class WorkspaceLauncher:
     def start(self, params):
         self.prune()
         paths=project_roots(params)
+        # Only the empty launcher's first request opts in. Other callers and
+        # delayed retries must never rebind a page to global selection changes.
+        if not paths and (params.get('arguments') or {}).get('allowSelectedProject') is True:
+            paths=selected_project_roots(params)
         if not paths:return response({'needsDirectory':True,'roots':[]})
         roots=[self.grant(path,'directory')['structuredContent'] for path in paths]
         return response({**roots[0],'roots':roots})

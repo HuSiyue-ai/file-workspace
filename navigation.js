@@ -257,6 +257,7 @@ async function locateCurrentFile(){
   if(target?.button){target.button.scrollIntoView({block:'nearest',inline:'nearest'});target.button.focus({preventScroll:true});}
 }
 async function refreshDirectoryTree(){
+  if(typeof retryWorkspaceHome==='function'&&!anchorFile){await retryWorkspaceHome();return;}
   if(!directoryRoot){await loadDirectory();return;}
   const epoch=directoryGeneration;await loadDirectoryNode(directoryRoot,true);
   async function refreshExpanded(node){

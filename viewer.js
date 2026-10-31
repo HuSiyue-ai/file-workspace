@@ -165,6 +165,6 @@ window.addEventListener('message',event=>{
 });
 document.getElementById('size').addEventListener('change',event=>preview.style.fontSize=event.target.value+'px');preview.style.fontSize='16px';
 document.getElementById('refresh').addEventListener('click',()=>{cancelPendingFilePreview();previewPath(activeFile?.path);});
-request('ui/initialize',{appInfo:{name:'markdown-math-preview',version:'1.8.2'},appCapabilities:{},protocolVersion:'2025-11-21'})
+request('ui/initialize',{appInfo:{name:'markdown-math-preview',version:'1.9.0-linux.2'},appCapabilities:{},protocolVersion:'2025-11-21'})
   .then(result=>{if(viewerDisposed)return;hostFileOpenAvailable=!!result.hostCapabilities?.experimental?.['openai/files'];setSelectionHostCapabilities(result.hostCapabilities);theme(result.hostContext);send({method:'ui/notifications/initialized'});status.textContent=activeFile?'':'请选择文件。';launcherConnected=true;syncPickerButtons();setTimeout(showLauncherHome,350);})
   .catch(e=>{if(!viewerDisposed)error(e.message);});

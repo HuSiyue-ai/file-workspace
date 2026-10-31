@@ -92,3 +92,9 @@ These commands leave source, Python environments, and document backups in place.
 ## How installation works
 
 `build.py` combines bundled vendor assets into offline `viewer.html` and generates host-specific `.mcp.json`. Source distribution, local registration, and official directory listing are separate steps; this repository does not claim official directory approval. See the [official plugin packaging documentation](https://developers.openai.com/plugins/build/plugins).
+
+## Default project in a new conversation
+
+Existing conversation assignments and working directories take precedence. For an unsent local desktop conversation with no saved context, the empty launcher can read the desktop selected local project once. This is global compatibility state: simultaneous project changes in multiple windows may select the wrong initial root. Loaded or manually selected roots never follow later global changes. Startup retries delayed conversation context at most four times; refreshing an empty file tree retries the conversation lookup without reading global selection again.
+
+Linux / SSH keeps the server conversation lookup or explicitly configured `--project-root` first. Desktop project selection is not automatically sent to the server. Update the server checkout, rebuild with its original Python environment and reinstall; preserve `.runtime/server-env.json`.
