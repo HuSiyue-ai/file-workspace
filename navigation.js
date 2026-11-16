@@ -7,8 +7,9 @@ let directoryData=null,directoryRoot=null,directoryGeneration=0,directoryDocumen
 let navigationMode='files',filePreviewTimer=null,folderToggleTimer=null,locateGeneration=0,directoryRootRequest=0;
 const folderClickDelay=320;
 const directoryNodes=new Map();
+const directoryNodeByButton=new WeakMap();
 const directoryMore=document.getElementById('directory-more'),directoryMenu=document.getElementById('directory-menu');
-function directoryMenuItems(){return ['directory-up','directory-collapse','directory-new-folder'].map(id=>document.getElementById(id)).filter(item=>item&&!item.disabled);}
+function directoryMenuItems(){return ['directory-up','directory-collapse','directory-new-file','directory-new-folder','directory-restore-file'].map(id=>document.getElementById(id)).filter(item=>item&&!item.disabled&&!item.hidden);}
 function setDirectoryMenuVisible(visible,focus=true,last=false){
   if(visible)cancelPendingFilePreview();
   visible=visible&&!directoryPanel.hidden&&navigationMode==='files';directoryMenu.hidden=!visible;
@@ -16,13 +17,16 @@ function setDirectoryMenuVisible(visible,focus=true,last=false){
   if(focus)(visible?(last?directoryMenuItems().at(-1):directoryMenuItems()[0]):directoryMore)?.focus();
 }
 function updateDirectoryHeading(){
+  const restore=document.getElementById('directory-restore-file');
+  if(restore)restore.hidden=!(typeof workspaceRemoteHost==='function'&&workspaceRemoteHost());
   const files=navigationMode==='files';
   document.getElementById('navigation-heading').hidden=files;
   document.getElementById('directory-path').hidden=!files;document.getElementById('directory-tools').hidden=!files;
   const address=document.getElementById('directory-path');address.title=directoryRoot?.path||'';
-  document.getElementById('directory-root-name').textContent=directoryRoot?pathName(directoryRoot.path):'文件夹';
+  document.getElementById('directory-root-name').textContent=directoryRoot?(typeof workspaceRemoteHost==='function'&&workspaceRemoteHost()?workspaceRemoteHost()+' · ':'')+pathName(directoryRoot.path):'文件夹';
 }
-const pathKey=value=>String(value||'').replace(/\\/g,'/').replace(/\/+$/,'').toLocaleLowerCase();
+// POSIX names are case-sensitive; Windows drive/UNC paths remain case-insensitive.
+const pathKey=value=>{const path=String(value||'').replace(/\\/g,'/').replace(/\/+$/,'');return /^[A-Za-z]:|^\/\//.test(path)?path.toLocaleLowerCase():path;};
 const pathName=value=>String(value).replace(/[\\/]+$/,'').split(/[\\/]/).pop()||value;
 function cancelPendingFilePreview(){if(filePreviewTimer!==null){clearTimeout(filePreviewTimer);filePreviewTimer=null;}if(folderToggleTimer!==null){clearTimeout(folderToggleTimer);folderToggleTimer=null;}}
 function directoryNotice(message,isError=false){directoryMessage.textContent=message;directoryMessage.classList.toggle('error',isError);}
@@ -35,7 +39,7 @@ function markDirectoryCurrent(){
     node.element.setAttribute('aria-selected',String(current));
   }
 }
-function setDirectoryVisible(visible,mode=navigationMode){
+function setDirectoryVisible(visible,mode=navigationMode,autoLoad=true){
   if(typeof closeFileActions==='function')closeFileActions();
   cancelPendingFilePreview();setDirectoryMenuVisible(false,false);if(typeof setProjectRootMenuVisible==='function')setProjectRootMenuVisible(false,false);
   if(!visible){endDirectoryResize();cancelPendingFilePreview();}
@@ -47,7 +51,7 @@ function setDirectoryVisible(visible,mode=navigationMode){
   const label=navigationMode==='outline'?'大纲':'文件树';
   document.getElementById('navigation-heading').textContent=label;directoryPanel.setAttribute('aria-label',label);updateDirectoryHeading();
   document.body.classList.toggle('directory-open',visible);
-  if(visible&&navigationMode==='files'&&!directoryData&&!directoryRoot)loadDirectory();
+  if(visible&&autoLoad&&navigationMode==='files'&&!directoryData&&!directoryRoot)loadDirectory();
   if(!visible)(navigationMode==='outline'?document.getElementById('outline-toggle'):directoryToggle).focus();
 }
 function syncDocumentNavigation(file,preserve=false){
@@ -84,6 +88,7 @@ function renderDirectoryNode(node){
   if(typeof decorateDirectoryFileIcon==='function')decorateDirectoryFileIcon(icon,node);
   const label=document.createElement('span');label.className='directory-name';label.textContent=node.name;
   button.append(arrow,icon,label);item.append(button);node.element=item;node.button=button;node.icon=icon;node.arrow=arrow;
+  directoryNodeByButton.set(button,node);
   button.addEventListener('keydown',event=>directoryKeydown(event,node));
   button.addEventListener('contextmenu',event=>{if(typeof showFileActions==='function')showFileActions(event,node);});
   button.addEventListener('keydown',event=>{if(event.key==='ContextMenu'||event.shiftKey&&event.key==='F10'){if(typeof showFileActions==='function')showFileActions(event,node);}});
@@ -102,7 +107,7 @@ function renderDirectoryNode(node){
     });
     button.addEventListener('dblclick',event=>{event.preventDefault();return enterDirectory(node);});
   }else{
-    button.title=node.path+'\n单击：当前页预览；双击：交给应用打开';
+    button.title=node.path+((typeof workspaceRemoteHost==='function'&&workspaceRemoteHost())?'\n单击或双击：当前页预览（SSH 远程文件）':'\n单击：当前页预览；双击：交给应用打开');
     button.addEventListener('click',event=>{
       cancelPendingFilePreview();if(event.detail>1)return;
       filePreviewTimer=setTimeout(()=>{filePreviewTimer=null;previewPath(node.path);},250);
@@ -151,7 +156,10 @@ function renderDirectory(){
   directoryNotice(messages.join(' '));
 }
 async function directoryRequest(path){
-  const response=await request('tools/call',{name:'list_markdown_directory',arguments:{...(path?{directory:path}:{}),...(activeFile?.path?{documentPath:activeFile.path}:{})}});
+  const args={...(path?{directory:path}:{}),...(activeFile?.path?{documentPath:activeFile.path}:{})};
+  const response=typeof requestWorkspaceRead==='function'
+    ?await requestWorkspaceRead('list_markdown_directory',args)
+    :await request('tools/call',{name:'list_markdown_directory',arguments:args});
   if(response.isError)throw new Error(response.content?.find(item=>item.type==='text')?.text||'无法读取文件夹');
   const data=response.structuredContent;
   if(!data||typeof data.directory!=='string'||!Array.isArray(data.entries))throw new Error('未收到目录内容，请重新打开文件标签页。');
@@ -213,6 +221,7 @@ async function setFolderExpanded(node,expanded){
 }
 async function openDirectoryFile(node){
   cancelPendingFilePreview();
+  if(typeof workspaceRemoteHost==='function'&&workspaceRemoteHost()){await previewPath(node.path);directoryNotice('远程文件在当前页预览；本机应用不能直接打开服务器路径。');return;}
   if(!hostFileOpenAvailable){directoryNotice('当前窗口不支持另开文件，单击仍可在本页预览。',true);return;}
   if(node.opening)return;node.opening=true;node.button.disabled=true;
   try{await request('openai/files/open',{path:node.path});directoryNotice('已交给应用打开：'+node.name);}
@@ -237,7 +246,7 @@ function directoryKeydown(event,node){
   }else return;
   event.preventDefault();focus?.button?.focus();
 }
-async function locateCurrentFile(){
+async function locateCurrentFile({focus=true}={}){
   cancelPendingFilePreview();document.getElementById('directory-filter').value='';
   if(!activeFile?.path)return;const path=activeFile.path;
   const inside=()=>directoryRoot&&(pathKey(path).startsWith(pathKey(directoryRoot.path)+'/'));
@@ -248,16 +257,17 @@ async function locateCurrentFile(){
   let node=directoryRoot;
   for(const part of relative.split('/').slice(0,-1)){
     if(generation!==locateGeneration||epoch!==directoryGeneration||pathKey(activeFile?.path)!==pathKey(path))return;
-    const child=node.children.find(item=>item.kind==='directory'&&item.name.toLocaleLowerCase()===part.toLocaleLowerCase());
+    const child=node.children.find(item=>item.kind==='directory'&&pathKey(item.path)===pathKey(node.path.replace(/[\\/]+$/,'')+'/'+part));
     if(!child){directoryNotice('当前文件未出现在已加载的目录中。',true);return;}
     await setFolderExpanded(child,true);node=child;
   }
   if(generation!==locateGeneration||epoch!==directoryGeneration||pathKey(activeFile?.path)!==pathKey(path))return;
   renderDirectory();const target=directoryNodes.get(pathKey(path));
-  if(target?.button){target.button.scrollIntoView({block:'nearest',inline:'nearest'});target.button.focus({preventScroll:true});}
+  if(target?.button){target.button.scrollIntoView({block:'nearest',inline:'nearest'});if(focus)target.button.focus({preventScroll:true});}
 }
 async function refreshDirectoryTree(){
   if(typeof retryWorkspaceHome==='function'&&!anchorFile){await retryWorkspaceHome();return;}
+  if(typeof loadWorkspaceRootChoices==='function')void loadWorkspaceRootChoices(true);
   if(!directoryRoot){await loadDirectory();return;}
   const epoch=directoryGeneration;await loadDirectoryNode(directoryRoot,true);
   async function refreshExpanded(node){

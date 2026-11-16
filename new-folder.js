@@ -3,13 +3,17 @@ const folderDialog=document.getElementById('folder-create-dialog'),folderForm=do
 const folderInput=document.getElementById('folder-create-name'),folderError=document.getElementById('folder-create-error');
 const folderSubmit=document.getElementById('folder-create-submit'),folderCancel=document.getElementById('folder-create-cancel');
 let folderCreateTarget=null,folderCreateBusy=false;
-function openNewFolderDialog(node=directoryRoot){
+function openNewFolderDialog(node=directoryRoot,kind='directory'){
   if(folderCreateBusy||viewerDisposed||!node)return;
   const parent=node.kind==='directory'?node:node.parent;
   if(!parent||directoryNodes.get(pathKey(parent.path))!==parent)return;
   cancelPendingFilePreview();closeFileActions();setDirectoryMenuVisible(false,false);
   if(typeof setProjectRootMenuVisible==='function')setProjectRootMenuVisible(false,false);
-  folderCreateTarget={node:parent,generation:directoryGeneration,session:workspaceSession,anchor:anchorFile?.path};
+  folderCreateTarget={node:parent,generation:directoryGeneration,session:workspaceSession,anchor:anchorFile?.path,kind};
+  const label=kind==='file'?'文件':'文件夹';
+  document.getElementById('folder-create-title').textContent='新建'+label;
+  document.getElementById('folder-create-label').textContent=label+'名称';
+  folderInput.placeholder=kind==='file'?'例如 notes.md、train.py 或 README':'';
   document.getElementById('folder-create-parent').textContent=parent.path;
   folderInput.value='';folderError.textContent='';folderSubmit.disabled=false;folderCancel.disabled=false;
   folderDialog.hidden=false;folderInput.focus();
@@ -22,13 +26,15 @@ function closeNewFolderDialog(focus=true){
 async function submitNewFolder(event){
   event.preventDefault();if(folderCreateBusy||!folderCreateTarget)return;
   const target=folderCreateTarget,name=folderInput.value;
-  if(!name.trim()){folderError.textContent='请输入文件夹名称。';folderInput.focus();return;}
+  const isFile=target.kind==='file',label=isFile?'文件':'文件夹';
+  if(!name.trim()){folderError.textContent='请输入'+label+'名称。';folderInput.focus();return;}
   if(target.generation!==directoryGeneration||target.session!==workspaceSession||target.anchor!==anchorFile?.path||directoryNodes.get(pathKey(target.node.path))!==target.node){
     folderError.textContent='文件树位置已改变，请取消后重新选择创建位置。';return;
   }
   folderCreateBusy=true;folderSubmit.disabled=true;folderCancel.disabled=true;folderInput.readOnly=true;folderError.textContent='';
   try{
-    const result=await request('tools/call',{name:'create_workspace_directory',arguments:{parent:target.node.path,name,...(target.session?{workspaceSession:target.session}:{})}});
+    const generation=readGeneration;
+    const result=await request('tools/call',{name:isFile?'create_workspace_file':'create_workspace_directory',arguments:{parent:target.node.path,name,workspaceSession:target.session??null}});
     if(result.isError)throw new Error(result.content?.find(item=>item.type==='text')?.text||'创建失败');
     const data=result.structuredContent;
     if(!data?.created||typeof data.path!=='string')throw new Error('未收到创建结果，请刷新文件树确认，避免重复创建');
@@ -37,10 +43,11 @@ async function submitNewFolder(event){
     if(target.generation===directoryGeneration&&target.session===workspaceSession&&directoryNodes.get(pathKey(target.node.path))===target.node){
       document.getElementById('directory-filter').value='';target.node.expanded=true;
       await loadDirectoryNode(target.node,true);
-      if(target.generation!==directoryGeneration||viewerDisposed)return;
+      if(target.generation!==directoryGeneration||target.session!==workspaceSession||viewerDisposed)return;
       const created=directoryNodes.get(pathKey(data.path));
       if(created?.button){created.button.scrollIntoView({block:'nearest',inline:'nearest'});created.button.focus({preventScroll:true});}
-      directoryNotice('已新建文件夹：'+data.name+(created?'':'。文件树未显示该项，请刷新或检查 500 项限制。'));
+      directoryNotice('已新建'+label+'：'+data.name+(created?'':'。文件树未显示该项，请刷新或检查 500 项限制。'));
+      if(isFile&&data.previewable&&generation===readGeneration)await previewPath(data.path);
     }
   }catch(error){if(!viewerDisposed){folderError.textContent=error.message;folderInput.focus();}}
   finally{folderCreateBusy=false;folderInput.readOnly=false;folderSubmit.disabled=false;folderCancel.disabled=false;}
@@ -56,6 +63,7 @@ folderDialog.addEventListener('keydown',event=>{
   }
 });
 document.getElementById('directory-new-folder').addEventListener('click',()=>openNewFolderDialog());
+document.getElementById('directory-new-file').addEventListener('click',()=>openNewFolderDialog(directoryRoot,'file'));
 document.getElementById('directory-view').addEventListener('contextmenu',event=>{
   if(!directoryRoot||event.target.closest('button,input,textarea'))return;
   showFileActions(event,directoryRoot);

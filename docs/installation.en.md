@@ -2,6 +2,8 @@
 
 [Documentation](README.en.md) · [简体中文](installation.md) · [Linux / SSH](linux-ssh-installation.en.md) · [Troubleshooting](troubleshooting.en.md)
 
+After upgrading from 1.13.x to 1.14.x, quit and reopen Codex once. For subsequent updates, select **Reload Plugin** in the current file-workspace tab to load a newly installed interface or compatible backend.
+
 ## Choose the runtime host
 
 | Environment | Instructions |

@@ -5,6 +5,7 @@ Project-owned code is MIT licensed. Bundled components retain their own licenses
 | Component | Bundled version | License / notice | Upstream |
 | --- | --- | --- | --- |
 | Marked | 16.4.2 | [original notice](vendor/marked.LICENSE.md), including MIT and retained additional notices | https://github.com/markedjs/marked |
+| marked-cjk-friendly (emphasis tokenizer) | 0.1.3 | [MIT](vendor/cjk/LICENSE) | https://github.com/tats-u/markdown-cjk-friendly |
 | DOMPurify | 3.3.1 | [Apache-2.0 OR MPL-2.0](vendor/dompurify.LICENSE) | https://github.com/cure53/DOMPurify |
 | KaTeX, CSS and fonts | 0.18.9 | [MIT](vendor/katex/LICENSE) | https://github.com/KaTeX/KaTeX |
 | highlight.js + PowerShell/LaTeX | 11.12.0 | [BSD-3-Clause](vendor/highlight/LICENSE) | https://github.com/highlightjs/highlight.js |

@@ -50,6 +50,8 @@ async function main(){
   assert.equal(f.calls.at(-1).params.arguments.allowSelectedProject,false,'manual refresh retries own context, not another window selection');
   f.reply(f.calls.at(-1),project('refreshed-project'));await refreshed;
   assert.equal(f.context.anchorFile.path,'C:/refreshed-project');
+  f=fixture();started=f.run('showLauncherHome()');const remote={directory:{name:'SSH',path:'/shared',host:'lab',resourceUri:'ssh:root'},session:'ssh-token'};
+  f.reply(f.calls[0],{needsDirectory:true,roots:[remote]});await started;assert.equal(f.roots.length,1,'remote menu remains available without a local project');assert.equal(f.context.anchorFile,null,'SSH is not auto-connected');
   console.log('PASS: new-chat roots, bounded delayed context, one-shot global fallback, manual/file/teardown races and explicit refresh');
 }
 main().catch(error=>{console.error(error);process.exitCode=1;});

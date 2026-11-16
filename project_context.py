@@ -89,6 +89,17 @@ def current_project(params, state_root=None):
     return roots[0] if roots else None
 
 
+def desktop_selected_project(state):
+    # Current desktop builds persist the selection under an owner-scoped key.
+    # Without an owner identity from the host, conflicting values are ambiguous.
+    prefix = 'electron-owner-value:selected-project:'
+    scoped = [value for key, value in state.items() if key.startswith(prefix) and key != prefix]
+    if not scoped:
+        return state.get('selected-project')
+    first = scoped[0]
+    return first if all(value == first for value in scoped) else None
+
+
 def selected_project_roots(params, state_root=None):
     """One-shot draft fallback. Never follow this global selection after loading.
 
@@ -109,7 +120,7 @@ def selected_project_roots(params, state_root=None):
             if thread_id in state.get('thread-project-assignments',{}):return []
             if thread_id in state.get('projectless-thread-ids',[]):return []
             if state.get('thread-project-membership-host-ids',{}).get(thread_id,'local')!='local':return []
-        selected=state.get('selected-project')
+        selected=desktop_selected_project(state)
         if not isinstance(selected,dict) or selected.get('type')!='local':return []
         project_id=selected.get('projectId')
         if not isinstance(project_id,str) or not project_id:return []

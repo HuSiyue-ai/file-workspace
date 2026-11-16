@@ -19,10 +19,11 @@ def verify():
         {'jsonrpc':'2.0','method':'notifications/initialized'},
         {'jsonrpc':'2.0','id':2,'method':'tools/list'},
         {'jsonrpc':'2.0','id':3,'method':'resources/read','params':{'uri':'ui://markdown-math-preview/viewer.html'}},
-        {'jsonrpc':'2.0','id':4,'method':'resources/read','params':{'uri':'file:///unauthorized.md'}}]
-    run=subprocess.run([sys.executable,'-B',str(PLUGIN/'server.py')],input='\n'.join(json.dumps(x) for x in requests)+'\n',text=True,encoding='utf-8',capture_output=True,timeout=15,check=True)
+        {'jsonrpc':'2.0','id':4,'method':'resources/read','params':{'uri':'file:///unauthorized.md'}},
+        {'jsonrpc':'2.0','id':5,'method':'tools/call','params':{'name':'read_workspace_update','arguments':{}}}]
+    run=subprocess.run([sys.executable,'-B',str(PLUGIN/'backend_host.py')],input='\n'.join(json.dumps(x) for x in requests)+'\n',text=True,encoding='utf-8',capture_output=True,timeout=15,check=True)
     responses=[json.loads(x) for x in run.stdout.splitlines()]
-    assert len(responses)==4 and not run.stderr
+    assert len(responses)==5 and not run.stderr
     assert responses[0]['result']['protocolVersion']=='2025-11-25'
     tool=responses[1]['result']['tools'][0]
     assert {'md','markdown','png','jpeg'}.issubset(tool['_meta']['openai/ui']['entrypoints'][0]['extensions'])
@@ -34,6 +35,9 @@ def verify():
     assert responses[1]['result']['tools'][3]['name']=='read_preview_file'
     assert responses[2]['result']['contents'][0]['mimeType']=='text/html;profile=mcp-app'
     assert 'error' in responses[3]
+    update=responses[4]['result']['structuredContent']
+    assert not update['restartRequired'] and 'id="plugin-reload"' in update['html']
+    assert update['uiVersion']==(ROOT/'VERSION').read_text(encoding='utf-8').strip()
     print('PASS: stdio handshake, file entrypoint, offline UI resource, reject unrelated resources',flush=True)
 
 HARNESS = '''<!doctype html><html lang="zh-CN"><meta charset="utf-8"><title>查看器验证</title><style>body{margin:0}iframe{width:100%;height:100vh;border:0}</style><iframe src="/viewer"></iframe><script>

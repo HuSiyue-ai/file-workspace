@@ -9,7 +9,7 @@ class Element{
  getBoundingClientRect(){return{left:420,bottom:290,width:208,height:220};}
  async emit(type,event={}){for(const fn of this.events[type]||[])await fn({type,preventDefault(){},stopPropagation(){},...event});}
 }
-const ids=['file-actions','file-copy-path','file-add-chat','file-new-folder','file-open-host','file-copy-name','file-copy-fallback','file-copy-value','file-action-name'];
+const ids=['file-actions','file-copy-path','file-add-chat','file-new-file','file-new-folder','file-reveal','file-export','file-open-host','file-copy-name','file-delete','file-copy-fallback','file-copy-value','file-action-name'];
 const elements=Object.fromEntries(ids.map(id=>[id,new Element()]));elements['file-actions'].hidden=true;
 for(const id of ids.slice(1))elements['file-actions'].append(elements[id]);
 const document=new Element();document.body=new Element();document.getElementById=id=>elements[id];document.createElement=()=>new Element();
@@ -42,7 +42,7 @@ async function main(){
  context.selectionDraftAvailable=false;show();assert.equal(elements['file-add-chat'].disabled,true);await context.performFileAction('chat');assert.equal(messages.length,1);
  context.selectionDraftAvailable=true;show(b);await elements['file-open-host'].emit('click');assert.equal(opened,b.path);
  show(a);nodes.delete(key(a.path));await context.performFileAction('chat');assert.equal(messages.length,1,'stale menu cannot act on removed entries');nodes.set(key(a.path),a);
- show();await elements['file-actions'].emit('keydown',{key:'End'});assert.equal(document.activeElement,elements['file-copy-name']);
+ show();await elements['file-actions'].emit('keydown',{key:'End'});assert.equal(document.activeElement,elements['file-delete']);
  await elements['file-actions'].emit('keydown',{key:'ArrowDown'});assert.equal(document.activeElement,elements['file-copy-path']);
  await document.emit('pointerdown',{target:document.body});assert.equal(elements['file-actions'].hidden,true);
  show();await window.emit('resize');assert.equal(elements['file-actions'].hidden,true);

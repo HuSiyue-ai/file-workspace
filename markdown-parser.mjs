@@ -1,6 +1,7 @@
 import {Marked} from './vendor/marked.mjs';
 import DOMPurify from './vendor/purify.mjs';
 import katex from './vendor/katex/katex.mjs';
+import markedCjkFriendly from './vendor/cjk/index.mjs';
 
 const escape = value => String(value).replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
 const imageUrl = href => /^https?:\/\//i.test(href) ? href : '/markdown-resource?path=' + encodeURIComponent(href);
@@ -14,6 +15,8 @@ export function markdownHtml(source, sanitizeHtml = escape) {
   });
   const markdown = new Marked({gfm:true}, {
     tokenizer: {
+      // 中文标点后可直接接正文；仅调整强调规则，不改原文和块源码坐标。
+      emStrong: markedCjkFriendly().tokenizer.emStrong,
       lheading(src) {
         const match = this.rules.block.lheading.exec(src);
         // An '=' row inside display math must never turn preceding prose into a Setext heading.

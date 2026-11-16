@@ -34,7 +34,8 @@ async function showLauncherHome(retry=false){
     const allowSelectedProject=!launcherHomeFallbackUsed;launcherHomeFallbackUsed=true;
     const data=unwrapWorkspace(await request('tools/call',{name:'get_workspace_start',arguments:{allowSelectedProject}}));
     if(viewerDisposed||anchorFile||launcherBusy||epoch!==launcherHomeEpoch)return;
-    if(data.directory&&data.session){setWorkspaceRootChoices(data.roots||[data]);await openWorkspaceDirectory(data);}
+    setWorkspaceRootChoices(data.roots||(data.directory?[data]:[]));
+    if(data.directory&&data.session){await openWorkspaceDirectory(data);}
     else{
       document.getElementById('launch-caption').textContent='正在等待当前项目路径，也可以手动选择文件夹。';
       setDirectoryVisible(true,'files');
@@ -57,7 +58,7 @@ function retryWorkspaceHome(){
 async function openWorkspaceDirectory(data){
   if(!data.directory?.resourceUri||typeof data.session!=='string')throw new Error('没有收到项目文件夹，请重新选择。');
   cancelWorkspaceHome();pickerNotice('');
-  cancelPendingFilePreview();++readGeneration;
+  cancelPendingFilePreview();++readGeneration;loadingPreviewPath=null;
   setDirectoryVisible(false,'files');
   rememberWorkspaceRoot(data);
   workspaceSession=data.session;anchorFile={...data.directory,kind:'directory'};activeFile=null;sourceText='';
@@ -77,6 +78,24 @@ function launcherFileOpened(){
   document.getElementById('refresh').disabled=false;
   document.getElementById('workspace-open').hidden=!workspaceSession;
 }
+function adoptLinkedWorkspace(data){
+  if(!data.directory?.resourceUri||typeof data.session!=='string'||!data.directory.host)throw new Error('服务器目录会话无效，请从文件树重新选择。');
+  cancelWorkspaceHome();rememberWorkspaceRoot(data);
+  workspaceSession=data.session;anchorFile={...data.directory,kind:'directory'};
+}
+async function revealLinkedFile(){
+  if(!activeFile?.path||viewerDisposed)return;
+  const file=activeFile,session=workspaceSession,epoch=readGeneration;
+  const current=()=>!viewerDisposed&&file===activeFile&&epoch===readGeneration&&session===workspaceSession;
+  // Show the split now, while this operation owns its single awaited request.
+  setDirectoryVisible(true,'files',false);
+  const localRoots=typeof workspaceRootChoices==='undefined'?[]:workspaceRootChoices.filter(choice=>!choice.directory.host&&pathKey(file.path).startsWith(pathKey(choice.directory.path)+'/')).sort((a,b)=>b.directory.path.length-a.directory.path.length);
+  if(!file.host&&typeof selectedWorkspaceRoot!=='undefined')selectedWorkspaceRoot=localRoots.length?workspaceChoiceKey(localRoots[0]):null;
+  const root=anchorFile?.kind==='directory'?anchorFile.path:localRoots[0]?.directory.path||file.path.replace(/[\\/][^\\/]+$/,'')||'/';
+  const loaded=await loadDirectory(root);
+  if(!current()||directoryPanel.hidden)return;
+  if(loaded)await locateCurrentFile({focus:false});
+}
 function pickerNotice(text,isError=false){
   const el=document.getElementById('launch-status');el.textContent=text;el.classList.toggle('error',isError);
   if(activeFile)editorNotice(text,isError);
@@ -88,26 +107,35 @@ async function chooseWorkspaceFile(kind='file'){
   if(launcherBusy||!launcherConnected||viewerDisposed)return;
   if(!await confirmEditorNavigation())return;
   cancelWorkspaceHome();
-  launcherBusy=true;syncPickerButtons();document.getElementById('viewer-options').open=false;
+  document.getElementById('viewer-options').open=false;
   pickerNotice(kind==='directory'?'请在本机选择项目文件夹。':'请在本机选择文件；取消后会保留当前页面。');
+  try{
+    await pickWorkspacePath(kind, async data => {
+      if(data.cancelled){pickerNotice('已取消选择。');return;}
+      pickerNotice('');
+      if(data.directory){await openWorkspaceDirectory(data);return;}
+      if(!data.file?.resourceUri||typeof data.session!=='string')throw new Error('没有收到选中的文件，请重试。');
+      workspaceSession=data.session;
+      const opened=await loadFile(data.file);
+      if(opened&&activeFile)setDirectoryVisible(true,'files');
+    });
+  }catch(e){pickerNotice('打开失败：'+e.message,true);}
+}
+async function pickWorkspacePath(kind, onSelected = data => data){
+  if(launcherBusy||!launcherConnected||viewerDisposed)return null;
+  launcherBusy=true;syncPickerButtons();
   try{
     let data=unwrapWorkspace(await request('tools/call',{name:'begin_workspace_file_selection',arguments:{kind}}));
     const ticket=data.ticket;
     if(typeof ticket!=='string')throw new Error('文件选择服务尚未更新，请完整退出应用后重新打开。');
     launcherTicket=ticket;
     while(data.pending&&!viewerDisposed){
-      await new Promise(resolve=>setTimeout(resolve,450));if(viewerDisposed)return;
+      await new Promise(resolve=>setTimeout(resolve,450));
+      if(viewerDisposed)return null;
       data=unwrapWorkspace(await request('tools/call',{name:'poll_workspace_file_selection',arguments:{ticket}}));
     }
-    if(viewerDisposed)return;
-    if(data.cancelled){pickerNotice('已取消选择。');return;}
-    pickerNotice('');
-    if(data.directory){await openWorkspaceDirectory(data);return;}
-    if(!data.file?.resourceUri||typeof data.session!=='string')throw new Error('没有收到选中的文件，请重试。');
-    workspaceSession=data.session;
-    const opened=await loadFile(data.file);
-    if(opened&&activeFile)setDirectoryVisible(true,'files');
-  }catch(e){pickerNotice('打开失败：'+e.message,true);}
+    return viewerDisposed?null:await onSelected(data);
+  }
   finally{
     if(launcherTicket&&!viewerDisposed)request('tools/call',{name:'cancel_workspace_file_selection',arguments:{ticket:launcherTicket}}).catch(()=>{});
     launcherTicket=null;launcherBusy=false;syncPickerButtons();

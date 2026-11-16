@@ -2,13 +2,19 @@
 const preview = document.getElementById('preview'), status = document.getElementById('status');
 let activeFile = null, anchorFile=null, sourceText = '', nextId = 0, readGeneration = 0, viewerDisposed=false;
 let hostFileOpenAvailable = false;
-let workspaceSession=null;
+let workspaceSession=null, loadingPreviewPath=null;
+let viewerHostInitialization=null;
+const workspaceResume=(()=>{try{return JSON.parse(document.getElementById('workspace-resume')?.textContent||'null');}catch{return null;}})();
+function workspaceRemoteHost(){return typeof anchorFile!=='undefined'?anchorFile?.host||'':'';}
 const pending = new Map();
 function send(message) { window.parent.postMessage({jsonrpc:'2.0',...message}, '*'); }
 function request(method, params) {
-  if(method==='tools/call'&&typeof workspaceSession!=='undefined'&&workspaceSession&&['read_preview_file','read_markdown_images','list_markdown_directory','save_markdown_file','read_pdf_preview','create_workspace_directory'].includes(params?.name))params={...params,arguments:{...params.arguments,workspaceSession:params.arguments?.workspaceSession||workspaceSession}};
+  if(method==='tools/call'&&workspaceSession&&params.arguments?.workspaceSession===undefined&&
+      ['read_preview_file','read_markdown_images','list_markdown_directory','save_markdown_file','read_pdf_preview','create_workspace_directory','create_workspace_file','recycle_workspace_file','reveal_workspace_file','read_workspace_copy','write_workspace_copy'].includes(params.name)){
+    params={...params,arguments:{...params.arguments,workspaceSession}};
+  }
   return new Promise((resolve,reject)=>{
-    const id = ++nextId, timeout = setTimeout(()=>{pending.delete(id);reject(new Error('文件预览连接超时，请重新打开此文件标签页。'));},20000);
+    const id = ++nextId, timeout = setTimeout(()=>{pending.delete(id);reject(new Error('文件预览连接超时，请重新打开此文件标签页。'));},60000);
     pending.set(id,{resolve,reject,timeout});send({id,method,params});
   });
 }
@@ -93,25 +99,78 @@ function clearFileNavigationSelection(){
   if(editing&&(['INPUT','TEXTAREA'].includes(editing.tagName)||editing.isContentEditable))return;
   window.getSelection?.()?.removeAllRanges();
 }
-async function previewPath(path,preserveDirectory=true){
-  if(!anchorFile||viewerDisposed)return;
-  if(typeof confirmEditorNavigation==='function'&&!await confirmEditorNavigation())return;
-  if(viewerDisposed)return;
-  clearFileNavigationSelection();
-  const generation=++readGeneration;
+function captureMarkdownScroll(area){
+  const top=area.scrollTop,anchors=new Map();
+  if(top<=0)return {top,anchors};
+  const viewport=area.getBoundingClientRect();
+  for(const block of preview.children){
+    const bounds=block.getBoundingClientRect();
+    if(bounds.top>=viewport.bottom)break;
+    if(bounds.bottom>viewport.top&&block.previewMarkup&&!anchors.has(block.previewMarkup)){
+      anchors.set(block.previewMarkup,bounds.top-viewport.top);
+    }
+  }
+  // Identical blocks are ambiguous after insertion or deletion.
+  const seen=new Set();
+  for(const block of preview.children){
+    const markup=block.previewMarkup;
+    if(seen.has(markup))anchors.delete(markup);
+    else if(anchors.has(markup))seen.add(markup);
+    if(!anchors.size)break;
+  }
+  return {top,anchors};
+}
+function restoreMarkdownScroll(area,position){
+  const matches=new Map();
+  for(const block of preview.children){
+    const markup=block.previewMarkup;
+    if(position.anchors.has(markup))matches.set(markup,matches.has(markup)?null:block);
+  }
+  let top=position.top;
+  for(const [markup,offset] of position.anchors){
+    const block=matches.get(markup);
+    if(!block)continue;
+    top=area.scrollTop+block.getBoundingClientRect().top-area.getBoundingClientRect().top-offset;
+    break;
+  }
+  area.scrollTo({top,behavior:'instant'});
+}
+function clearPreviewSurfaces(){
   resetSelectedExcerpt();clearOutline();pictureSurface.clear();
   if(typeof clearFormatSurfaces==='function')clearFormatSurfaces();
   preview.hidden=true;preview.replaceChildren();
   document.getElementById('source').hidden=true;document.getElementById('source').textContent='';
   document.getElementById('picture-view').hidden=true;
-  status.className='';status.textContent='正在读取文件…';
+}
+async function previewPath(path,preserveDirectory=true,refresh=false){
+  if(!anchorFile||viewerDisposed)return;
+  const fileAtStart=activeFile;
+  if(typeof confirmEditorNavigation==='function'&&!await confirmEditorNavigation())return;
+  if(viewerDisposed||(refresh&&activeFile!==fileAtStart))return;
+  clearFileNavigationSelection();
+  const generation=++readGeneration;
+  loadingPreviewPath=path||anchorFile.path;
+  const area=document.getElementById('document-area');
+  const keepPosition=refresh&&fileAtStart?.kind==='markdown'&&path===fileAtStart.path&&!preview.hidden&&area;
+  if(!keepPosition){
+    clearPreviewSurfaces();
+    status.className='';status.textContent='正在读取文件…';
+  }
   try{
-    const result=await request('tools/call',{name:'read_preview_file',arguments:path?{path}:{}});
+    const args=path?{path}:{};
+    const result=typeof requestWorkspaceRead==='function'
+      ?await requestWorkspaceRead('read_preview_file',args)
+      :await request('tools/call',{name:'read_preview_file',arguments:args});
     if(generation!==readGeneration)return;
     if(result.isError)throw new Error(result.content?.find(item=>item.type==='text')?.text||'文件无法读取');
     const data=result.structuredContent;
     if(!data?.path||!['markdown','image','text','pdf'].includes(data.kind))throw new Error('未收到可预览的文件内容');
-    activeFile={name:data.name,path:data.path,kind:data.kind,revision:data.revision,resourceUri:anchorFile.resourceUri+'#preview='+encodeURIComponent(data.path)};
+    const position=keepPosition&&data.kind==='markdown'&&data.path===path?captureMarkdownScroll(area):null;
+    if(keepPosition)clearPreviewSurfaces();
+    // A host-selected POSIX link can establish the configured SSH capability.
+    // Adopt it before embedded-image/PDF requests or editor controls are started.
+    if(data.workspace&&typeof adoptLinkedWorkspace==='function')adoptLinkedWorkspace(data.workspace);
+    activeFile={name:data.name,path:data.path,kind:data.kind,revision:data.revision,host:data.host||workspaceRemoteHost(),resourceUri:anchorFile.resourceUri+'#preview='+encodeURIComponent(data.path)};
     document.getElementById('title').textContent=data.name;
     const markdown=data.kind==='markdown';
     document.getElementById('size').disabled=!markdown;
@@ -124,27 +183,33 @@ async function previewPath(path,preserveDirectory=true){
     else{sourceText=data.text;if(typeof showTextFile==='function')showTextFile(data);else{document.getElementById('source').textContent=data.text;document.getElementById('source').hidden=false;}}
     if(typeof syncEditorControls==='function')syncEditorControls();
     syncDocumentNavigation(activeFile,preserveDirectory);
-    document.getElementById('document-area')?.scrollTo?.({top:0,behavior:'instant'});
     status.className='';status.textContent='';
     if(typeof launcherFileOpened==='function')launcherFileOpened();
+    if(position)restoreMarkdownScroll(area,position);
+    else area?.scrollTo?.({top:0,behavior:'instant'});
     return true;
   }catch(e){if(generation===readGeneration){
     const detail=/Unknown tool|unknown tool|not found/i.test(e.message)?'插件服务尚未更新，请在插件设置中重新启用此插件，或重启应用。':e.message;
     error('读取失败：'+detail);
-  }}
+  }}finally{
+    if(generation===readGeneration)loadingPreviewPath=null;
+  }
 }
 async function loadFile(file){
   if(!file?.resourceUri||viewerDisposed)return;
   if(typeof confirmEditorNavigation==='function'&&!await confirmEditorNavigation())return;
   cancelPendingFilePreview();anchorFile=file;activeFile=null;
   document.getElementById('title').textContent=file.name||'file-workspace';
-  return await previewPath(null,false);
+  const opened=await previewPath(null,false);
+  if(opened&&typeof revealLinkedFile==='function')await revealLinkedFile();
+  return opened;
 }
 function teardownViewer(){
   if(typeof cancelWorkspacePicker==='function')cancelWorkspacePicker();
   if(viewerDisposed)return;viewerDisposed=true;++readGeneration;
   if(typeof clearFormatSurfaces==='function')clearFormatSurfaces();
   if(typeof persistEditorDraft==='function')persistEditorDraft();
+  if(typeof pdfSurface!=='undefined')pdfSurface.dispose?.();
   cancelPendingFilePreview();resetSelectedExcerpt();clearOutline();pictureSurface.clear();
   if(typeof disposeDirectoryTree==='function')disposeDirectoryTree();
   for(const waiter of pending.values()){clearTimeout(waiter.timeout);waiter.reject(new Error('预览页已关闭'));}pending.clear();
@@ -154,8 +219,8 @@ window.addEventListener('message',event=>{
   if(event.source!==window.parent||event.data?.jsonrpc!=='2.0')return;
   const message=event.data;
   if(message.id!=null&&!message.method){const waiter=pending.get(message.id);if(waiter){pending.delete(message.id);clearTimeout(waiter.timeout);message.error?waiter.reject(new Error(message.error.message)):waiter.resolve(message.result);}return;}
-  if(message.method==='ui/notifications/tool-input'&&message.params?.arguments?.file){workspaceSession=null;loadFile(message.params.arguments.file);}
-  if(message.method==='ui/notifications/tool-result'&&!activeFile&&message.params?.structuredContent?.file){workspaceSession=null;loadFile(message.params.structuredContent.file);}
+  if(message.method==='ui/notifications/tool-input'&&message.params?.arguments?.file&&!ignoreReloadHostFile(message.params.arguments.file)){workspaceSession=null;loadFile(message.params.arguments.file);}
+  if(message.method==='ui/notifications/tool-result'&&!activeFile&&message.params?.structuredContent?.file&&!ignoreReloadHostFile(message.params.structuredContent.file)){workspaceSession=null;loadFile(message.params.structuredContent.file);}
   if(message.method==='ui/notifications/host-context-changed')theme(message.params);
   if(message.method==='notifications/resources/updated'&&message.params?.uri===anchorFile?.resourceUri){
     if(typeof editorSession!=='undefined'&&editorSession)editorNotice('原文件可能已更新，编辑内容已保留；保存前会检查版本。');
@@ -164,7 +229,10 @@ window.addEventListener('message',event=>{
   if(message.id!=null){if(['ping','ui/resource-teardown'].includes(message.method)){if(message.method==='ui/resource-teardown')teardownViewer();send({id:message.id,result:{}});}else send({id:message.id,error:{code:-32601,message:'Method not found'}});}
 });
 document.getElementById('size').addEventListener('change',event=>preview.style.fontSize=event.target.value+'px');preview.style.fontSize='16px';
-document.getElementById('refresh').addEventListener('click',()=>{cancelPendingFilePreview();previewPath(activeFile?.path);});
-request('ui/initialize',{appInfo:{name:'markdown-math-preview',version:'1.9.0-linux.2'},appCapabilities:{},protocolVersion:'2025-11-21'})
-  .then(result=>{if(viewerDisposed)return;hostFileOpenAvailable=!!result.hostCapabilities?.experimental?.['openai/files'];setSelectionHostCapabilities(result.hostCapabilities);theme(result.hostContext);send({method:'ui/notifications/initialized'});status.textContent=activeFile?'':'请选择文件。';launcherConnected=true;syncPickerButtons();setTimeout(showLauncherHome,350);})
+document.getElementById('refresh').addEventListener('click',()=>{
+  cancelPendingFilePreview();
+  if(activeFile)previewPath(activeFile.path,true,true);
+});
+(workspaceResume?.hostInitialization?Promise.resolve(workspaceResume.hostInitialization):request('ui/initialize',{appInfo:{name:'markdown-math-preview',version:'1.12.0'},appCapabilities:{},protocolVersion:'2025-11-21'}))
+  .then(async result=>{if(viewerDisposed)return;viewerHostInitialization=result;hostFileOpenAvailable=!!result.hostCapabilities?.experimental?.['openai/files'];setSelectionHostCapabilities(result.hostCapabilities);theme(result.hostContext);if(!workspaceResume?.hostInitialization)send({method:'ui/notifications/initialized'});status.textContent=activeFile?'':'请选择文件。';launcherConnected=true;syncPickerButtons();if(typeof resumeReloadedWorkspace==='function'&&await resumeReloadedWorkspace())return;setTimeout(showLauncherHome,350);})
   .catch(e=>{if(!viewerDisposed)error(e.message);});

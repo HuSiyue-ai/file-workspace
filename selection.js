@@ -57,7 +57,7 @@ async function addSelectedExcerpt(){
   try{
     await request('ui/message',{
       role:'user',
-      content:[{type:'text',text:'文件：'+excerpt.name+'\n所选文段：\n'+excerpt.text,_meta:{'openai/title':excerpt.name+' · 选中文段'}}],
+      content:[{type:'text',text:'文件：'+excerpt.name+(activeFile?.host?'\nSSH 主机：'+activeFile.host+'\n路径：'+activeFile.path:'')+'\n所选文段：\n'+excerpt.text,_meta:{'openai/title':excerpt.name+' · 选中文段'}}],
       _meta:{'openai/message':{target:'active',send:false}}
     });
     resetSelectedExcerpt();

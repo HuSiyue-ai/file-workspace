@@ -4,6 +4,7 @@ import re
 from pathlib import Path
 from file_reader import selected_anchor
 from image_reader import filesystem_path
+from access_policy import checked_path
 
 
 def folder_name(value):
@@ -30,17 +31,20 @@ def plain_parent(path):
     return resolved
 
 
-def create_directory(params):
-    args=params.get('arguments') or {}
+def writable_parent(params, parent):
     anchor=selected_anchor(params)
-    name=folder_name(args.get('name'))
-    parent=args.get('parent')
     if not isinstance(parent,str) or not parent or len(parent)>8192:raise ValueError('请选择创建位置')
     parent=filesystem_path(parent)
     if not parent.is_absolute() or '..' in parent.parts or os.path.normcase(parent.anchor)!=os.path.normcase(anchor.anchor):
         raise ValueError('只能在当前项目所在磁盘的实际文件夹中创建')
+    return checked_path(plain_parent(parent))
+
+
+def create_directory(params):
+    args=params.get('arguments') or {}
+    name=folder_name(args.get('name'))
     try:
-        parent=plain_parent(parent)
+        parent=writable_parent(params,args.get('parent'))
         target=parent/name
         # parents=False / exist_ok=False：同名文件与文件夹均拒绝，不做覆盖或自动改名。
         target.mkdir(parents=False,exist_ok=False)

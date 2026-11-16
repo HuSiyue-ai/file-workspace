@@ -2,6 +2,8 @@
 
 [文档首页](README.md) · [English](installation.en.md) · [Linux / SSH](linux-ssh-installation.md) · [遇到问题](troubleshooting.md)
 
+从 1.13.x 升级到 1.14.x 后，需要完整退出并重开 Codex 一次。随后使用顶部「重载插件」，可在当前标签应用已安装的新版界面和兼容后台。详见[刷新与重载](reloading.md)。
+
 ## 先选运行环境
 
 | 环境 | 使用哪份说明 |
@@ -102,3 +104,7 @@ codex plugin marketplace remove markdown-preview-local
 如果项目关联延迟到达，启动页最多追加四次查询，之后停止轮询。空白状态下可点击文件树刷新重新查询对话项目，但不会重新读取全局选中项目；需要改选时使用项目菜单。
 
 Linux / SSH 继续优先使用服务器对话关联或明确配置的 `--project-root`。电脑上的项目选择状态不会自动传到服务器；此修复不意味着能在服务器识别所有桌面新对话的项目。升级需在服务器拉取源码、沿用原环境重新构建并安装，保留已有 `.runtime/server-env.json`。
+
+## 从本机浏览远程目录
+
+可在同一个项目菜单添加明确配置的 SSH 工作区，保留远程 Markdown 编辑和保存。配置和限制见 [SSH 工作区](ssh-workspaces.md)。

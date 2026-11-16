@@ -92,6 +92,11 @@ async function main(){
  let oldResolve;deferred.set('slow',new Promise(resolve=>oldResolve=resolve));fixtures.set('fast',data('C:\\fast',[],'C:\\'));
  const old=context.loadDirectory('slow');assert.equal(run('directoryRoot'),retainedRoot,'loading a new root keeps the existing tree until success');await context.loadDirectory('fast');oldResolve({structuredContent:fixtures.get(root)});await old;
  assert.equal(run('directoryRoot.path'),'C:\\fast','stale root result must not replace the latest tree');
+ assert.notEqual(run("pathKey('/shared/Case.md')"),run("pathKey('/shared/case.md')"),'POSIX names are distinct');
+ assert.equal(run("pathKey('C:/Shared/Case.md')"),run("pathKey('c:/shared/case.md')"),'Windows names retain insensitive matching');
+ context.workspaceRemoteHost=()=> 'lab';const nativeCalls=calls.filter(call=>call.method==='openai/files/open').length;
+ await context.openDirectoryFile({name:'remote.md',path:'/shared/remote.md'});assert.equal(previews.at(-1),'/shared/remote.md');
+ assert.equal(calls.filter(call=>call.method==='openai/files/open').length,nativeCalls,'remote double-click never passes POSIX paths to local native open');
  context.disposeDirectoryTree();assert.equal(run('directoryNodes.size'),0);assert.equal(timers.size,0);
  const html=fs.readFileSync(__dirname+'/plugins/markdown-math-preview/viewer.html','utf8');new vm.Script(html.split('<script>')[1].split('</script>')[0]);
  assert.match(html,/id="workspace"/);assert.match(html,/#workspace\{display:flex/);assert.match(html,/id="directory-list" role="tree"/);

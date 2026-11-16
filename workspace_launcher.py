@@ -35,7 +35,7 @@ class WorkspaceLauncher:
 
     def begin(self, kind='file'):
         self.prune()
-        if kind not in ('file','directory'):raise ValueError('选择类型无效')
+        if kind not in ('file','directory','export-directory'):raise ValueError('选择类型无效')
         if os.environ.get('FILE_WORKSPACE_HEADLESS') == '1':
             raise ValueError('SSH 服务器不使用图形文件选择框；请从当前项目文件树打开文件。')
         if self.picker:
@@ -54,7 +54,7 @@ class WorkspaceLauncher:
         proc = self.picker['process']
         if proc.poll() is None:
             return response({'pending': True})
-        kind=self.picker.get('kind','file')
+        kind='directory' if self.picker.get('kind') in ('directory','export-directory') else 'file'
         self.picker = None
         output, _ = proc.communicate(timeout=5)
         if proc.returncode:

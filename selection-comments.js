@@ -65,7 +65,7 @@ function commentSelectedExcerpt(){
   // 统一使用插件内批注状态，避免原生请求被接受后绕过本地编号气泡。
   if(excerptComments.length>=20){excerptNotice('一次最多暂存 20 段，请先加入聊天草稿或移除部分批注。',true);return;}
   if(excerptComments.reduce((total,item)=>total+item.text.length+item.comment.length,0)+entry.text.length>100000){excerptNotice('批注总长度超过 10 万字，请分批加入聊天草稿。',true);return;}
-  openQuickExcerptComment({text:entry.text,name:entry.name,path:activeFile.path||'',uri:entry.uri,comment:'',range:entry.range});
+  openQuickExcerptComment({text:entry.text,name:entry.name,path:activeFile.path||'',host:activeFile.host||'',uri:entry.uri,comment:'',range:entry.range});
 }
 async function sendExcerptComments(){
   if(viewerDisposed||excerptCommentsBusy||!excerptComments.length)return;
@@ -78,7 +78,7 @@ async function sendExcerptComments(){
   excerptCommentsBusy=true;excerptCommentStatus.textContent='';updateExcerptCommentActions();
   try{
     await request('ui/message',{role:'user',content:entries.map((item,index)=>({type:'text',
-      text:'文件：'+item.name+(item.path?'\n路径：'+item.path:'')+'\n所选文段 '+(index+1)+'：\n'+item.text+'\n\n我的评论：\n'+(item.comment.trim()||'（未填写）'),
+      text:'文件：'+item.name+(item.host?'\nSSH 主机：'+item.host:'')+(item.path?'\n路径：'+item.path:'')+'\n所选文段 '+(index+1)+'：\n'+item.text+'\n\n我的评论：\n'+(item.comment.trim()||'（未填写）'),
       _meta:{'openai/title':item.name+' · 批注 '+(index+1)}})),_meta:{'openai/message':{target:'active',send:false}}});
     if(viewerDisposed)return;
     excerptComments=[];excerptCommentDialog.hidden=true;renderExcerptComments();

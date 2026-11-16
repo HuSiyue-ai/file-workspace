@@ -70,6 +70,26 @@ class ProjectRootsTests(unittest.TestCase):
             scoped=launcher.authorize({'arguments':{'workspaceSession':result['session']}})
             self.assertEqual(list_directory(scoped)['structuredContent']['directory'],str(first.resolve()))
 
+    def test_draft_reads_owner_scoped_selection_before_legacy(self):
+        selected = {'type':'local','projectId':'this-project'}
+        legacy = {'type':'local','projectId':'other-project'}
+        params = {'_meta':{'threadId':'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb'}}
+        key = 'electron-owner-value:selected-project:' + 'a'*64
+        other_key = 'electron-owner-value:selected-project:' + 'b'*64
+        cases = [
+            ({key:selected,'selected-project':None}, [self.project.resolve()]),
+            ({key:selected,'selected-project':legacy}, [self.project.resolve()]),
+            ({key:None,'selected-project':legacy}, []),
+            ({key:selected,other_key:legacy}, []),
+            ({key:selected,other_key:selected}, [self.project.resolve()]),
+        ]
+        for extra, expected in cases:
+            with self.subTest(extra=extra):
+                state = self.write_state([str(self.project)], **extra)
+                before = state.read_bytes()
+                self.assertEqual(selected_project_roots(params, self.root), expected)
+                self.assertEqual(state.read_bytes(), before)
+
     def test_selected_project_lookup_honors_codex_home(self):
         self.write_state([])
         with patch.dict(os.environ, {'CODEX_HOME':str(self.root)}):

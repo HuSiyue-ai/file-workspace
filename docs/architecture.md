@@ -5,7 +5,9 @@
 ```text
 Codex file entry / launcher
           |
-     local stdio MCP server (server.py)
+     local stdio MCP host (backend_host.py)
+          |
+     replaceable file worker (server.py)
           |
           +-- scoped file / image / directory readers
           +-- version-checked Markdown writer + backups

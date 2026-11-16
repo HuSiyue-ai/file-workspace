@@ -20,7 +20,7 @@ def main():
     parser=(ROOT/'markdown-parser.mjs').read_text(encoding='utf-8').split('export function attachMarkdownPreview')[0]
     parser=re.sub(r'^import .*?;\s*','',parser,flags=re.M).replace('export function','function')
     parser=parser.replace('src="${escape(imageUrl(href))}"','data-md-image-src="${escape(href)}"')
-    program=module('marked.mjs',('Marked','B'))+module('katex/katex.mjs',('katex','katex'))+parser+'\nconsole.log(markdownHtml('+json.dumps(sample.read_text(encoding='utf-8'))+'));'
+    program=module('marked.mjs',('Marked','B'))+module('cjk/index.mjs',('markedCjkFriendly','markedCjkFriendly'))+module('katex/katex.mjs',('katex','katex'))+parser+'\nconsole.log(markdownHtml('+json.dumps(sample.read_text(encoding='utf-8'))+'));'
     run=subprocess.run([str(NODE),'-'],input=program,capture_output=True,text=True,encoding='utf-8',check=True)
     rendered=run.stdout
     refs=[html.unescape(value) for value in re.findall(r'data-md-image-src="([^"]+)"',rendered)]

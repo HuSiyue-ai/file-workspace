@@ -3,7 +3,7 @@ const editorInput=document.getElementById('markdown-editor'),editMode=document.g
 let editorSession=null,editorTransition=null,editorDecision=null,displayMode='read',activeBlock=null;
 function editorDirty(){return !!editorSession&&editorSession.text!==editorSession.base;}
 function editorNotice(text,isError=false){const el=document.getElementById('edit-status');el.textContent=text;el.classList.toggle('error',isError);el.hidden=!text;}
-function draftKey(path){return 'file-preview:markdown-draft:'+path;}
+function draftKey(path){const host=typeof workspaceRemoteHost==='function'?workspaceRemoteHost():'';return 'file-preview:markdown-draft:'+(host?'ssh:'+host+':':'')+path;}
 function persistEditorDraft(){
   if(!editorSession)return;
   try{if(editorDirty())localStorage.setItem(draftKey(editorSession.path),JSON.stringify({text:editorSession.text,revision:editorSession.revision}));else localStorage.removeItem(draftKey(editorSession.path));}

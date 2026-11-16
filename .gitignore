@@ -28,3 +28,6 @@ desktop.ini
 
 # Local browser review artifacts.
 /.playwright-cli/
+
+# Private host profiles are never published.
+/ssh-workspaces.json

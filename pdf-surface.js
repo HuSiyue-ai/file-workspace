@@ -79,8 +79,9 @@ const pdfSurface=(()=>{
   el('pdf-zoom').addEventListener('change',event=>{zoom=event.target.value;renderPage();});
   el('pdf-search-form').addEventListener('submit',event=>{event.preventDefault();search();});el('pdf-results').addEventListener('change',event=>renderPage(Number(event.target.value)));
   image.addEventListener('error',()=>{if(doc){notice.textContent='页面图像无法显示，请刷新重试。';notice.classList.add('error');}});
-  if(typeof ResizeObserver!=='undefined')new ResizeObserver(entries=>{
+  const resizeObserver=typeof ResizeObserver==='undefined'?null:new ResizeObserver(entries=>{
     const width=entries[0]?.contentRect.width;if(!doc||zoom!=='fit-width'||!width||Math.abs(width-lastWidth)<2)return;lastWidth=width;clearTimeout(resizeTimer);resizeTimer=setTimeout(()=>{if(doc)renderPage();},220);
-  }).observe(stage);
-  return {clear,show};
+  });resizeObserver?.observe(stage);
+  function dispose(){clear();clearTimeout(resizeTimer);resizeObserver?.disconnect();}
+  return {clear,show,dispose};
 })();

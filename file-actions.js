@@ -1,15 +1,21 @@
 // 文件树右键只作用于点中的条目；不切换正文，不读入整份文件，不自动发送消息。
 const fileActions=document.getElementById('file-actions');
-const fileActionIds=['file-copy-path','file-add-chat','file-new-folder','file-open-host','file-copy-name'];
+const fileActionIds=['file-copy-path','file-add-chat','file-new-file','file-new-folder','file-reveal','file-export','file-open-host','file-copy-name','file-delete'];
 const fileCopyFallback=document.getElementById('file-copy-fallback');
 const fileCopyValue=document.getElementById('file-copy-value');
 let fileActionTarget=null,fileActionBusy=false,fileActionPoint=null;
-function fileActionItems(){return fileActionIds.map(id=>document.getElementById(id)).filter(button=>!button.disabled);}
+function fileActionItems(){return fileActionIds.map(id=>document.getElementById(id)).filter(button=>!button.disabled&&!button.hidden);}
 function updateFileActions(){
   for(const id of fileActionIds)document.getElementById(id).disabled=fileActionBusy;
   const add=document.getElementById('file-add-chat');add.disabled=fileActionBusy||!selectionDraftAvailable;
+  const file=fileActionTarget?.kind==='file';
+  const reveal=document.getElementById('file-reveal'),exportButton=document.getElementById('file-export');
+  reveal.hidden=exportButton.hidden=!file;
+  document.getElementById('file-delete').hidden=!file;
+  reveal.textContent=typeof workspaceRemoteHost==='function'&&workspaceRemoteHost()?'在文件树中定位':'打开文件所在文件夹';
+  exportButton.disabled=fileActionBusy||(typeof treeTransferBusy!=='undefined'&&treeTransferBusy);
   add.title=selectionDraftAvailable?'将文件名和完整路径加入当前聊天草稿，不附加整份文件，不自动发送':'当前窗口没有对话草稿接口，请在聊天旁打开文件后使用';
-  document.getElementById('file-open-host').disabled=fileActionBusy||!hostFileOpenAvailable||!fileActionTarget?.button;
+  document.getElementById('file-open-host').disabled=fileActionBusy||!hostFileOpenAvailable||!fileActionTarget?.button||(typeof workspaceRemoteHost==='function'&&!!workspaceRemoteHost());
 }
 function closeFileActions(focus=false){
   const target=fileActionTarget;fileActionTarget=null;fileActions.hidden=true;
@@ -60,6 +66,9 @@ async function performFileAction(action){
   if(action==='chat'&&!selectionDraftAvailable){excerptNotice('当前窗口没有对话草稿接口。',true);return;}
   if(action==='open'&&!hostFileOpenAvailable){excerptNotice('当前窗口不支持交给应用打开。',true);return;}
   if(action==='mkdir'){openNewFolderDialog(node);return;}
+  if(action==='create'){openNewFolderDialog(node,'file');return;}
+  if(action==='delete'){closeFileActions(true);await showDeleteFile(node);return;}
+  if(action==='export'){closeFileActions(true);await exportTreeFile(node);return;}
   closeFileActions(true);fileActionBusy=true;
   try{
     if(action==='path'||action==='name'){
@@ -67,24 +76,36 @@ async function performFileAction(action){
       if(!viewerDisposed)excerptNotice(action==='path'?'已复制完整路径。':'已复制名称。');
     }else if(action==='chat'){
       await request('ui/message',{
-        role:'user',content:[{type:'text',text:(node.kind==='directory'?'本地文件夹：':'本地文件：')+node.name+'\n完整路径：'+node.path,
-          _meta:{'openai/title':node.name+' · 本地路径'}}],
+        role:'user',content:[{type:'text',text:((typeof workspaceRemoteHost==='function'&&workspaceRemoteHost())?'SSH '+workspaceRemoteHost()+' '+(node.kind==='directory'?'文件夹：':'文件：'):(node.kind==='directory'?'本地文件夹：':'本地文件：'))+node.name+'\n完整路径：'+node.path,
+          _meta:{'openai/title':node.name+((typeof workspaceRemoteHost==='function'&&workspaceRemoteHost())?' · SSH 路径':' · 本地路径')}}],
         _meta:{'openai/message':{target:'active',send:false}}
       });
       if(!viewerDisposed)excerptNotice('文件名和完整路径已加入聊天草稿，尚未发送；未附加整份文件。');
     }else if(action==='open'){
       await openDirectoryFile(node);
+    }else if(action==='reveal'){
+      if(workspaceRemoteHost()){
+        if(node.parent!==directoryRoot && !await enterDirectory(node.parent))return;
+        document.getElementById('directory-filter').value='';
+        renderDirectory();
+        const current=directoryNodes.get(pathKey(node.path));
+        current?.button?.scrollIntoView({block:'nearest',inline:'nearest'});
+        current?.button?.focus({preventScroll:true});
+        directoryNotice('已定位 '+node.name);
+      }else{
+        unwrapWorkspace(await request('tools/call',{name:'reveal_workspace_file',arguments:{path:node.path}}));
+      }
     }
   }catch(error){
     if(!viewerDisposed){
       if(action==='path'||action==='name'){
         manualFileCopy(node,action==='path'?node.path:node.name);
         excerptNotice('无法直接复制，已选中内容，请按 Ctrl+C。',true);
-      }else excerptNotice('添加失败：'+error.message+'；可重新右键后再试。',true);
+      }else excerptNotice('操作失败：'+error.message,true);
     }
   }finally{fileActionBusy=false;if(!fileActions.hidden)updateFileActions();}
 }
-for(const [id,action] of [['file-copy-path','path'],['file-add-chat','chat'],['file-new-folder','mkdir'],['file-open-host','open'],['file-copy-name','name']])document.getElementById(id).addEventListener('click',()=>performFileAction(action));
+for(const [id,action] of [['file-copy-path','path'],['file-add-chat','chat'],['file-new-file','create'],['file-new-folder','mkdir'],['file-reveal','reveal'],['file-export','export'],['file-open-host','open'],['file-copy-name','name'],['file-delete','delete']])document.getElementById(id).addEventListener('click',()=>performFileAction(action));
 fileActions.addEventListener('keydown',event=>{
   if(event.key==='Escape'){event.preventDefault();event.stopPropagation();closeFileActions(true);return;}
   if(event.target===fileCopyValue)return;

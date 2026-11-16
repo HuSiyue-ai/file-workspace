@@ -13,8 +13,10 @@ def main():
         root.withdraw()
         root.attributes('-topmost', True)
         root.update()
-        if len(sys.argv)>1 and sys.argv[1]=='directory':
-            path=filedialog.askdirectory(parent=root,title='file-workspace — 选择项目文件夹',mustexist=True)
+        kind = sys.argv[1] if len(sys.argv)>1 else 'file'
+        if kind in ('directory','export-directory'):
+            title = '选择导出位置' if kind == 'export-directory' else '选择项目文件夹'
+            path=filedialog.askdirectory(parent=root,title='file-workspace — '+title,mustexist=True)
         else:
             path = filedialog.askopenfilename(parent=root, title='file-workspace — 打开文件',
             filetypes=[('PDF、Markdown、图片和文本', ' '.join('*'+suffix for suffix in sorted(SUPPORTED))),
