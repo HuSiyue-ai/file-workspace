@@ -5,9 +5,9 @@
 ```text
 Codex file entry / launcher
           |
-     local stdio MCP host (backend_host.py)
+     local stdio MCP host (src/backend/backend_host.py)
           |
-     replaceable file worker (server.py)
+     replaceable file worker (src/backend/server.py)
           |
           +-- scoped file / image / directory readers
           +-- version-checked Markdown writer + backups
@@ -23,15 +23,17 @@ Codex file entry / launcher
 
 ## Source layout
 
-- 根目录 Python：后端、构建、测试和本地调试入口。
-- 根目录 JavaScript：按界面职责分块，由 `build.py` 拼接；不需要 npm 构建。
-- `markdown-parser.mjs`：项目自己的 Marked/KaTeX 适配与源码区间生成。
+- 根目录保留构建、环境诊断、回归检查和本地演示入口。
+- `src/backend/`：MCP 后端、目录与文件服务、SSH 及 PDF 工作进程。
+- `src/viewer/`：侧栏界面、Markdown 解析、文件树与编辑器，由 `build.py` 构建。
+- `tests/`：Python 和 JavaScript 的回归测试，由 `check.py` 运行。
+- `scripts/`：维护脚本，包括 Linux 源码归档。
 - `vendor/`：固定版本的第三方资源、原许可证、校验清单；运行不请求 CDN。
 - `examples/`：可公开的虚构演示数据。
 - `plugins/`：构建输出，包含机器相关配置，已忽略。
 - `.agents/plugins/marketplace.json`：本地安装目录清单。
 - `VERSION`：服务与插件清单共同使用的版本。
-- `access_policy.py`：可选目录边界检查。
+- `src/backend/access_policy.py`：可选目录边界检查。
 - `.runtime/server-env.json`：本机项目、边界与 headless 配置；忽略发布。
 - `verify_docs.py`：文档相对链接、锚点与配图引用检查。
 

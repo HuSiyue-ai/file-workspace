@@ -13,6 +13,6 @@ Project-owned code is MIT licensed. Bundled components retain their own licenses
 
 The offline build copies the corresponding license files into the generated plugin's `licenses/` directory. Preserve source headers and license files when redistributing.
 
-`vendor/SHA256SUMS.json` records the exact checked-in assets. Original CDN integrity records are also retained for highlight.js and Mermaid; `python verify_vendor.py` checks the current bytes without accessing the network.
+`vendor/SHA256SUMS.json` records the exact checked-in assets. Original CDN integrity records are also retained for highlight.js and Mermaid; `python tests/verify_vendor.py` checks the current bytes without accessing the network.
 
 Optional PDF support uses separately installed pypdfium2/PDFium and Pillow for image encoding. Its upstream packages supply their own license notices; their binaries are not redistributed in this repository. The development-only pypdf package is used to create an encrypted test fixture.

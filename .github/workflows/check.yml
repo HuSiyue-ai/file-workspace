@@ -69,7 +69,7 @@ jobs:
             echo "Updated release notes for $tag; tag and assets unchanged."
             exit 0
           fi
-          python package_release.py
+          python scripts/package_release.py
           gh release create "$tag" \
             "dist/file-workspace-$version-linux-source.tar.gz" \
             dist/SHA256SUMS.txt \

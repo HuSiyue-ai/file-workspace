@@ -11,6 +11,8 @@ import sys
 ROOT = Path(__file__).resolve().parent
 PLUGIN = ROOT / 'plugins' / 'markdown-math-preview'
 VENDOR = ROOT / 'vendor'
+BACKEND = ROOT / 'src' / 'backend'
+VIEWER = ROOT / 'src' / 'viewer'
 
 def server_environment(options):
     local_env = ROOT / '.runtime/server-env.json'
@@ -57,25 +59,21 @@ def main():
     assert 'url(fonts/' not in css
     globals_js = (VENDOR/'mermaid/mermaid.min.js').read_text(encoding='utf-8')+'\n' + '\n'.join((VENDOR/'highlight'/name).read_text(encoding='utf-8') for name in ['highlight.min.js','powershell.min.js','latex.min.js'])
     libs = module('marked.mjs', ('Marked', 'B')) + module('cjk/index.mjs', ('markedCjkFriendly', 'markedCjkFriendly')) + module('purify.mjs', ('DOMPurify', 'purify')) + module('katex/katex.mjs', ('katex', 'katex'))
-    parser = (ROOT / 'markdown-parser.mjs').read_text(encoding='utf-8').split('export function attachMarkdownPreview')[0]
+    parser = (VIEWER / 'markdown-parser.mjs').read_text(encoding='utf-8').split('export function attachMarkdownPreview')[0]
     parser = re.sub(r'^import .*?;\s*', '', parser, flags=re.M)
     parser = parser.replace('export function', 'function')
     parser = parser.replace('src="${escape(imageUrl(href))}"', 'data-md-image-src="${escape(href)}"')
     # Authored HTML is sanitized before math layout HTML is inserted.
-    script = libs + parser + '\n'.join((ROOT / name).read_text(encoding='utf-8') for name in ['mermaid-surface.js', 'image-surface.js', 'format-surfaces.js', 'pdf-surface.js', 'viewer.js', 'file-icons.js', 'navigation.js', 'selection.js', 'outline.js', 'file-actions.js', 'file-recycle.js', 'edit-history.js', 'block-editor.js', 'toolbar.js', 'launcher.js', 'project-switcher.js', 'new-folder.js', 'file-transfer.js', 'selection-comments.js', 'comment-bubbles.js', 'plugin-reload.js'])
+    script = libs + parser + '\n'.join((VIEWER / name).read_text(encoding='utf-8') for name in ['mermaid-surface.js', 'image-surface.js', 'format-surfaces.js', 'pdf-surface.js', 'viewer.js', 'file-icons.js', 'navigation.js', 'selection.js', 'outline.js', 'file-actions.js', 'file-recycle.js', 'edit-history.js', 'block-editor.js', 'toolbar.js', 'launcher.js', 'project-switcher.js', 'new-folder.js', 'file-transfer.js', 'selection-comments.js', 'comment-bubbles.js', 'plugin-reload.js'])
     # A fresh document can run the bundle again without redeclaring global consts.
     script = globals_js + '\n(()=>{\n' + script + '\n})();'
-    template = (ROOT / 'viewer-template.html').read_text(encoding='utf-8')
+    template = (VIEWER / 'viewer-template.html').read_text(encoding='utf-8')
     html = template.replace('__WORKSPACE_VERSION__', (ROOT/'VERSION').read_text(encoding='utf-8').strip()).replace('/* KATEX_CSS */', css).replace('/* VIEWER_SCRIPT */', script.replace('</script', '<\\/script'))
     (PLUGIN / 'viewer.html').write_text(html, encoding='utf-8')
-    shutil.copy2(ROOT / 'server.py', PLUGIN / 'server.py')
     shutil.copy2(ROOT / 'VERSION', PLUGIN / 'VERSION')
-    shutil.copy2(ROOT / 'image_reader.py', PLUGIN / 'image_reader.py')
-    shutil.copy2(ROOT / 'directory_reader.py', PLUGIN / 'directory_reader.py')
-    shutil.copy2(ROOT / 'file_reader.py', PLUGIN / 'file_reader.py')
-    shutil.copy2(ROOT / 'file_writer.py', PLUGIN / 'file_writer.py')
-    for name in ['access_policy.py', 'workspace_launcher.py', 'native_picker.py', 'project_context.py', 'csv_reader.py', 'pdf_reader.py', 'pdf_worker.py', 'directory_writer.py', 'file_operations.py', 'file_recycle.py', 'ssh_workspaces.py', 'ui_reload.py', 'backend_host.py']:
-        shutil.copy2(ROOT / name, PLUGIN / name)
+    for module_path in sorted(BACKEND.glob('*.py')):
+        shutil.copy2(module_path, PLUGIN / module_path.name)
+    sys.path.insert(0, str(PLUGIN))
     ssh_config = ROOT / '.runtime/ssh-workspaces.json'
     if ssh_config.is_file():
         from ssh_workspaces import profiles_from

@@ -1,13 +1,15 @@
 """Loopback-only UI host for fictional examples; chat requests are intercepted."""
 from http.server import HTTPServer
 import json
-from pathlib import Path
+import sys
+from build import ROOT, PLUGIN
 from unittest.mock import patch
+if not (PLUGIN / 'viewer.html').is_file():
+    raise SystemExit('Run python build.py before launching the local demo.')
+sys.path[:0] = [str(PLUGIN), str(ROOT / 'tests')]
 import server
 import verify
 import file_writer
-
-ROOT=Path(__file__).resolve().parent
 file_writer.BACKUP_ROOT=ROOT/'browser-save-backups'
 PAGE=verify.HARNESS.replace("if(m.method==='ui/notifications/initialized')Promise.all",
     "if(m.method==='ui/notifications/initialized')return;\nif(false)Promise.all")
