@@ -68,6 +68,20 @@ async function loadImages(generation) {
     }catch(e){if(generation===readGeneration)for(const source of sources)fail(source,e.message);}
   }
 }
+let mathFontCheck;
+function detectMathFontFallback(){
+  if(mathFontCheck||!document.fonts||!preview.querySelector('.katex'))return;
+  const fonts=[...document.fonts].filter(face=>/^["']?KaTeX_/.test(face.family));
+  if(!fonts.length){
+    document.documentElement.dataset.mathRenderer='mathml';
+    mathFontCheck=Promise.resolve();
+    return;
+  }
+  // KaTeX emits private-use glyphs, which an ordinary fallback font cannot draw.
+  mathFontCheck=Promise.all(fonts.map(face=>face.load())).catch(()=>{
+    if(!viewerDisposed)document.documentElement.dataset.mathRenderer='mathml';
+  });
+}
 function render(text,generation,preserveBlocks=false) {
   sourceText=text;document.getElementById('source').textContent=text;
   const clean = html => DOMPurify.sanitize(html,{FORBID_TAGS:['script','style','iframe','object','embed','form','textarea','button'],FORBID_ATTR:['style','id','name'],ALLOW_DATA_ATTR:false,ADD_ATTR:['data-md-image-src'],ADD_URI_SAFE_ATTR:['data-md-image-src']});
@@ -81,6 +95,7 @@ function render(text,generation,preserveBlocks=false) {
     block.previewMarkup=key;return block;
   });
   preview.replaceChildren(...blocks);
+  detectMathFontFallback();
   if(typeof highlightMarkdownCode==='function')highlightMarkdownCode(preview);
   if(typeof renderMermaidBlocks==='function')renderMermaidBlocks(preview,preserveBlocks);
   rebuildOutline();

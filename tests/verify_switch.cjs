@@ -25,6 +25,22 @@ const reply=(request,result)=>{for(const callback of window.events.message)callb
 const snapshot=(name,kind='markdown')=>({path:'C:\\notes\\'+name,name,kind,text:'# '+name,mimeType:'image/png',blob:'AA=='});
 async function main(){
  reply(sent[0],{hostCapabilities:{experimental:{'openai/files':{}}}});await tick();
+ let fontLoads=0;
+ elements.preview.querySelector=()=>null;
+ context.document.fonts=[{family:'KaTeX_Main',load:async()=>{fontLoads++;}}];
+ run('detectMathFontFallback()');
+ assert.equal(fontLoads,0,'only probe KaTeX when rendering a formula');
+ elements.preview.querySelector=()=>({});
+ run('detectMathFontFallback()');await tick();
+ assert.equal(fontLoads,1);
+ assert.equal(context.document.documentElement.dataset.mathRenderer,undefined);
+ run('mathFontCheck=undefined');
+ context.document.fonts=[{family:'KaTeX_Main',load:async()=>{throw Error('blocked by CSP');}}];
+ run('detectMathFontFallback()');await tick();
+ assert.equal(context.document.documentElement.dataset.mathRenderer,'mathml');
+ context.document.fonts=undefined;
+ delete context.document.documentElement.dataset.mathRenderer;
+
  context.document.activeElement={tagName:'INPUT'};run('clearFileNavigationSelection()');assert.equal(selectionCleared,0,'typing in a filter/input keeps its selection');
  context.document.activeElement=null;run('clearFileNavigationSelection()');assert.equal(selectionCleared,1,'navigation clears stale document selection');
  run("workspaceSession='current-token'");
