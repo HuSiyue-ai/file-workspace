@@ -10,7 +10,7 @@ const pending = new Map();
 function send(message) { window.parent.postMessage({jsonrpc:'2.0',...message}, '*'); }
 function request(method, params) {
   if(method==='tools/call'&&workspaceSession&&params.arguments?.workspaceSession===undefined&&
-      ['read_preview_file','read_markdown_images','list_markdown_directory','save_markdown_file','read_pdf_preview','create_workspace_directory','create_workspace_file','recycle_workspace_file','reveal_workspace_file','read_workspace_copy','write_workspace_copy'].includes(params.name)){
+      ['read_preview_file','read_markdown_images','list_markdown_directory','save_markdown_file','read_pdf_preview','create_workspace_directory','create_workspace_file','recycle_workspace_file','reveal_workspace_file','open_workspace_file_external','read_workspace_copy','write_workspace_copy'].includes(params.name)){
     params={...params,arguments:{...params.arguments,workspaceSession}};
   }
   return new Promise((resolve,reject)=>{
@@ -157,6 +157,33 @@ function clearPreviewSurfaces(){
   document.getElementById('source').hidden=true;document.getElementById('source').textContent='';
   document.getElementById('picture-view').hidden=true;
 }
+function isPreviewData(data){
+  return !!data?.path&&['markdown','image','text','pdf'].includes(data.kind);
+}
+async function displayReadPreview(data,generation,preserveDirectory,position=null,clear=true){
+  if(clear)clearPreviewSurfaces();
+  // Adopt the issued workspace before requesting embedded images or PDF pages.
+  if(data.workspace&&typeof adoptLinkedWorkspace==='function')adoptLinkedWorkspace(data.workspace);
+  activeFile={name:data.name,path:data.path,kind:data.kind,revision:data.revision,host:data.host||workspaceRemoteHost(),resourceUri:anchorFile.resourceUri+'#preview='+encodeURIComponent(data.path)};
+  document.getElementById('title').textContent=data.name;
+  const markdown=data.kind==='markdown';
+  document.getElementById('size').disabled=!markdown;
+  document.getElementById('outline-toggle').hidden=!(markdown||data.kind==='pdf');
+
+  if(!markdown&&data.kind!=='pdf'&&navigationMode==='outline')setDirectoryVisible(true,'files');
+  if(data.kind==='pdf'){await pdfSurface.show(data);if(generation!==readGeneration)return;}
+  else if(data.kind==='image'){document.getElementById('picture-view').hidden=false;pictureSurface.show(data,data.name);}
+  else if(markdown){preview.hidden=false;render(data.text,generation);}
+  else{sourceText=data.text;if(typeof showTextFile==='function')showTextFile(data);else{document.getElementById('source').textContent=data.text;document.getElementById('source').hidden=false;}}
+  if(typeof syncEditorControls==='function')syncEditorControls();
+  syncDocumentNavigation(activeFile,preserveDirectory);
+  status.className='';status.textContent='';
+  if(typeof launcherFileOpened==='function')launcherFileOpened();
+  const area=document.getElementById('document-area');
+  if(position)restoreMarkdownScroll(area,position);
+  else area?.scrollTo?.({top:0,behavior:'instant'});
+  return true;
+}
 async function previewPath(path,preserveDirectory=true,refresh=false){
   if(!anchorFile||viewerDisposed)return;
   const fileAtStart=activeFile;
@@ -179,30 +206,12 @@ async function previewPath(path,preserveDirectory=true,refresh=false){
     if(generation!==readGeneration)return;
     if(result.isError)throw new Error(result.content?.find(item=>item.type==='text')?.text||'文件无法读取');
     const data=result.structuredContent;
-    if(!data?.path||!['markdown','image','text','pdf'].includes(data.kind))throw new Error('未收到可预览的文件内容');
+    if(!isPreviewData(data))throw new Error('未收到可预览的文件内容');
     const position=keepPosition&&data.kind==='markdown'&&data.path===path?captureMarkdownScroll(area):null;
     if(keepPosition)clearPreviewSurfaces();
-    // A host-selected POSIX link can establish the configured SSH capability.
-    // Adopt it before embedded-image/PDF requests or editor controls are started.
-    if(data.workspace&&typeof adoptLinkedWorkspace==='function')adoptLinkedWorkspace(data.workspace);
-    activeFile={name:data.name,path:data.path,kind:data.kind,revision:data.revision,host:data.host||workspaceRemoteHost(),resourceUri:anchorFile.resourceUri+'#preview='+encodeURIComponent(data.path)};
-    document.getElementById('title').textContent=data.name;
-    const markdown=data.kind==='markdown';
-    document.getElementById('size').disabled=!markdown;
-    document.getElementById('outline-toggle').hidden=!(markdown||data.kind==='pdf');
-
-    if(!markdown&&data.kind!=='pdf'&&navigationMode==='outline')setDirectoryVisible(true,'files');
-    if(data.kind==='pdf'){await pdfSurface.show(data);if(generation!==readGeneration)return;}
-    else if(data.kind==='image'){document.getElementById('picture-view').hidden=false;pictureSurface.show(data,data.name);}
-    else if(markdown){preview.hidden=false;render(data.text,generation);}
-    else{sourceText=data.text;if(typeof showTextFile==='function')showTextFile(data);else{document.getElementById('source').textContent=data.text;document.getElementById('source').hidden=false;}}
-    if(typeof syncEditorControls==='function')syncEditorControls();
-    syncDocumentNavigation(activeFile,preserveDirectory);
-    status.className='';status.textContent='';
-    if(typeof launcherFileOpened==='function')launcherFileOpened();
-    if(position)restoreMarkdownScroll(area,position);
-    else area?.scrollTo?.({top:0,behavior:'instant'});
-    return true;
+    const opened=await displayReadPreview(data,generation,preserveDirectory,position,false);
+    if(opened&&!refresh&&preserveDirectory&&typeof recordWorkspaceLocation==='function')recordWorkspaceLocation();
+    return opened;
   }catch(e){if(generation===readGeneration){
     const detail=/Unknown tool|unknown tool|not found/i.test(e.message)?'插件服务尚未更新，请在插件设置中重新启用此插件，或重启应用。':e.message;
     error('读取失败：'+detail);
@@ -217,6 +226,7 @@ async function loadFile(file){
   document.getElementById('title').textContent=file.name||'file-workspace';
   const opened=await previewPath(null,false);
   if(opened&&typeof revealLinkedFile==='function')await revealLinkedFile();
+  if(opened&&typeof recordWorkspaceLocation==='function')recordWorkspaceLocation();
   return opened;
 }
 function teardownViewer(){

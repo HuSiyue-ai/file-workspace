@@ -23,7 +23,7 @@ function updateDirectoryHeading(){
   document.getElementById('navigation-heading').hidden=files;
   document.getElementById('directory-path').hidden=!files;document.getElementById('directory-tools').hidden=!files;
   const address=document.getElementById('directory-path');address.title=directoryRoot?.path||'';
-  document.getElementById('directory-root-name').textContent=directoryRoot?(typeof workspaceRemoteHost==='function'&&workspaceRemoteHost()?workspaceRemoteHost()+' · ':'')+pathName(directoryRoot.path):'文件夹';
+  document.getElementById('directory-root-name').textContent=directoryRoot?(typeof workspaceRemoteHost==='function'&&workspaceRemoteHost()?workspaceRemoteHost()+' · ':'')+pathName(directoryRoot.path):'选择项目';
 }
 // POSIX names are case-sensitive; Windows drive/UNC paths remain case-insensitive.
 const pathKey=value=>{const path=String(value||'').replace(/\\/g,'/').replace(/\/+$/,'');return /^[A-Za-z]:|^\/\//.test(path)?path.toLocaleLowerCase():path;};
@@ -165,6 +165,16 @@ async function directoryRequest(path){
   if(!data||typeof data.directory!=='string'||!Array.isArray(data.entries))throw new Error('未收到目录内容，请重新打开文件标签页。');
   return data;
 }
+function replaceDirectoryData(data){
+  ++directoryGeneration;++locateGeneration;++directoryRootRequest;
+  directoryNodes.clear();
+  directoryRoot=makeDirectoryNode({path:data.directory,name:pathName(data.directory),kind:'directory'},null);directoryRoot.expanded=true;
+  directoryData=data;document.getElementById('directory-filter').value='';
+  reconcileDirectory(directoryRoot,data);renderDirectoryChildren(directoryRoot);renderDirectory();
+  directoryList.scrollTop=0;updateDirectoryHeading();
+  document.getElementById('directory-up-quick').disabled=document.getElementById('directory-up').disabled=!data.parent;
+  directoryList.setAttribute('aria-busy','false');
+}
 async function loadDirectory(path){
   if(typeof closeFileActions==='function')closeFileActions();
   cancelPendingFilePreview();if(!activeFile&&!(typeof anchorFile!=='undefined'&&anchorFile?.kind==='directory')){directoryNotice('尚未取得项目路径，请从项目菜单选择文件夹。');return false;}
@@ -173,24 +183,22 @@ async function loadDirectory(path){
   directoryList.setAttribute('aria-busy','true');directoryNotice('正在打开文件夹…');
   try{
     const data=await directoryRequest(path);if(operation!==directoryRootRequest)return false;
-    ++directoryGeneration;directoryNodes.clear();
-    directoryRoot=makeDirectoryNode({path:data.directory,name:pathName(data.directory),kind:'directory'},null);directoryRoot.expanded=true;
-    directoryData=data;document.getElementById('directory-filter').value='';
-    reconcileDirectory(directoryRoot,data);renderDirectoryChildren(directoryRoot);renderDirectory();
-    directoryList.scrollTop=0;updateDirectoryHeading();
-    document.getElementById('directory-up-quick').disabled=document.getElementById('directory-up').disabled=!data.parent;return true;
+    replaceDirectoryData(data);return true;
   }catch(error){if(operation===directoryRootRequest)directoryNotice(error.message,true);return false;}
   finally{if(operation===directoryRootRequest)directoryList.setAttribute('aria-busy','false');}
 }
 async function enterDirectory(node){
   cancelPendingFilePreview();
   if(node.kind!=='directory'||directoryNodes.get(pathKey(node.path))!==node)return false;
-  return loadDirectory(node.path);
+  const loaded=await loadDirectory(node.path);
+  if(loaded&&typeof recordWorkspaceLocation==='function')recordWorkspaceLocation();
+  return loaded;
 }
 async function navigateDirectoryUp(){
   cancelPendingFilePreview();if(!directoryData?.parent)return false;
   const parent=directoryData.parent,previous=directoryRoot?.path;
   if(!await loadDirectory(parent))return false;
+  if(typeof recordWorkspaceLocation==='function')recordWorkspaceLocation();
   // 只回到真实父目录，不使用“定位当前文档”改变导航根目录。
   const target=directoryNodes.get(pathKey(previous));
   if(target?.button){target.button.scrollIntoView({block:'nearest',inline:'nearest'});target.button.focus({preventScroll:true});}

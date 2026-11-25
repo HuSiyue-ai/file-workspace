@@ -8,7 +8,7 @@ from directory_reader import list_directory
 from directory_writer import create_directory
 from file_reader import selected_anchor
 from file_recycle import file_recycle
-from file_operations import FileCopies, create_file, read_copy, reveal_file
+from file_operations import FileCopies, create_file, open_with_default_app, read_copy, reveal_file
 from file_reader import read_file, TEXT
 from file_writer import save_markdown
 from pdf_reader import read_pdf
@@ -16,10 +16,12 @@ from image_reader import IMAGE_TYPES
 from workspace_launcher import WorkspaceLauncher, SESSION_KEY
 from ssh_workspaces import SSHWorkspaces
 from ui_reload import UIUpdates
+from workspace_pins import WorkspacePins
 
 launcher = WorkspaceLauncher()
 copies = FileCopies()
 ssh_workspaces = SSHWorkspaces()
+workspace_pins = WorkspacePins(launcher, ssh_workspaces)
 VERSION = Path(__file__).with_name('VERSION').read_text(encoding='utf-8').strip()
 ui_updates = UIUpdates(Path(__file__).parent, VERSION)
 MANAGED_WORKER = __name__ == '__main__' and sys.argv[1:] == ['--managed-worker']
@@ -120,6 +122,7 @@ FILE_OPERATIONS = [
                      'revision': {'type': 'string', 'maxLength': 256}, 'id': {'type': 'string', 'maxLength': 32}},
                     ['action'], destructive=True), recycle_selected_file),
     (operation_tool('create_workspace_file', '新建空文件', {'parent': COPY_PATH, 'name': COPY_NAME}, ['parent', 'name']), create_file),
+    (operation_tool('open_workspace_file_external', '用系统默认应用打开文件', {'path': COPY_PATH}, ['path']), open_with_default_app),
     (operation_tool('reveal_workspace_file', '打开文件所在文件夹', {'path': COPY_PATH}, ['path'], True), reveal_file),
     (operation_tool('read_workspace_copy', '读取导出文件分块', {'path': COPY_PATH, 'offset': COPY_OFFSET,
                     'revision': {'type': 'string', 'maxLength': 256}}, ['path', 'offset'], True), read_copy),
@@ -140,11 +143,25 @@ START_TOOL = {**HOME_TOOL, 'name':'get_workspace_start', 'title':'取得当前�
               'inputSchema':{'type':'object','properties':{'allowSelectedProject':{'type':'boolean'}},'additionalProperties':False},
               '_meta':{'ui':{'visibility':['app']}}}
 
+PINS_TOOL = operation_tool('manage_workspace_pins', '管理常用文件夹',
+    {'action': {'enum': ['list', 'open', 'pin', 'unpin']}, 'id': {'type': 'string', 'maxLength': 32},
+     'path': COPY_PATH, 'workspaceSession': {'type': 'string', 'maxLength': 128}}, ['action'])
+
+
+def preview_file(params):
+    result = read_file(params)
+    if (params.get('arguments') or {}).get('path') is None:
+        anchor = selected_anchor(params)
+        if anchor.is_file():
+            result['structuredContent']['workspace'] = launcher.grant(anchor.parent, 'directory')['structuredContent']
+    return result
+
+
 def dispatch(method, params):
     if method == 'initialize':
         return {'protocolVersion':params.get('protocolVersion','2025-11-25'),'capabilities':{'tools':{},'resources':{}},'serverInfo':{'name':'markdown-math-preview','version':VERSION}}
     if method == 'ping': return {}
-    if method == 'tools/list': return {'tools':[TOOL,IMAGE_TOOL,DIRECTORY_TOOL,FILE_TOOL,SAVE_TOOL,HOME_TOOL,PICK_TOOL,POLL_TOOL,CANCEL_TOOL,START_TOOL,PDF_TOOL,CREATE_DIRECTORY_TOOL,UPDATE_TOOL,*(tool for tool, _ in FILE_OPERATIONS)]}
+    if method == 'tools/list': return {'tools':[TOOL,IMAGE_TOOL,DIRECTORY_TOOL,FILE_TOOL,SAVE_TOOL,HOME_TOOL,PICK_TOOL,POLL_TOOL,CANCEL_TOOL,START_TOOL,PDF_TOOL,CREATE_DIRECTORY_TOOL,UPDATE_TOOL,PINS_TOOL,*(tool for tool, _ in FILE_OPERATIONS)]}
     if method == 'resources/list': return {'resources':[{'uri':URI,'name':'file-workspace','mimeType':MIME}]}
     if method == 'resources/templates/list': return {'resourceTemplates':[]}
     if method == 'resources/read':
@@ -158,6 +175,7 @@ def dispatch(method, params):
         if params.get('name') == PICK_TOOL['name']: return launcher.begin((params.get('arguments') or {}).get('kind','file'))
         if params.get('name') == POLL_TOOL['name']: return launcher.poll((params.get('arguments') or {}).get('ticket'))
         if params.get('name') == CANCEL_TOOL['name']: return launcher.cancel((params.get('arguments') or {}).get('ticket'))
+        if params.get('name') == PINS_TOOL['name']: return workspace_pins.run(params)
         remote_result = ssh_workspaces.route(params)
         if remote_result is not None:
             if MANAGED_WORKER and params.get('name') == 'write_workspace_copy':
@@ -169,7 +187,7 @@ def dispatch(method, params):
         if params.get('name') == CREATE_DIRECTORY_TOOL['name']: return create_directory(params)
         if params.get('name') == PDF_TOOL['name']: return read_pdf(params)
         if params.get('name') == SAVE_TOOL['name']: return save_markdown(params)
-        if params.get('name') == FILE_TOOL['name']: return read_file(params)
+        if params.get('name') == FILE_TOOL['name']: return preview_file(params)
         if params.get('name') == DIRECTORY_TOOL['name']: return list_directory(params)
         if params.get('name') == IMAGE_TOOL['name']: return read_images(params)
         if params.get('name') != TOOL['name']: raise ValueError('Unknown tool')

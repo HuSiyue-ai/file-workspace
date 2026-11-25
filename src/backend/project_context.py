@@ -1,9 +1,4 @@
-"""Locate the requesting conversation's ordered project roots, then its cwd.
-
-The local state schema is an optional compatibility adapter, read-only. A fresh
-launcher may explicitly opt into the desktop's selected project once; existing
-conversation assignments always take precedence over that global fallback.
-"""
+"""Read the requesting conversation's project and offer saved project choices."""
 from pathlib import Path
 import re
 import sqlite3
@@ -25,24 +20,55 @@ def local_directory(value):
     return path
 
 
-def conversation_cwd(params, state_root=None):
+def thread_identifier(params):
     meta=params.get('_meta') or {}
     thread_id=meta.get('threadId') or meta.get('thread_id')
-    if not isinstance(thread_id,str) or not re.fullmatch(r'[0-9a-fA-F]{8}(?:-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}',thread_id):
-        return None
-    root=Path(state_root) if state_root is not None else Path(os.environ.get('CODEX_HOME', str(Path.home()/'.codex')))
-    databases=sorted((p for p in root.glob('state_*.sqlite') if re.fullmatch(r'state_\d+\.sqlite',p.name)),
-                     key=lambda p:int(p.stem.split('_')[-1]), reverse=True)
+    return thread_id if isinstance(thread_id,str) and re.fullmatch(
+        r'[0-9a-fA-F]{8}(?:-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}',thread_id) else None
+
+
+def state_directory(state_root):
+    return Path(state_root) if state_root is not None else Path(os.environ.get('CODEX_HOME', Path.home()/'.codex'))
+
+
+def query_state(root, query, args=()):
+    databases = sorted((path for path in root.glob('state_*.sqlite')
+                        if re.fullmatch(r'state_\d+\.sqlite',path.name)),
+                       key=lambda path:int(path.stem.split('_')[-1]), reverse=True)
     for path in databases[:3]:
         try:
             with closing(sqlite3.connect(path.as_uri()+'?mode=ro',uri=True,timeout=.25)) as connection:
                 connection.execute('PRAGMA query_only=ON')
-                row=connection.execute('SELECT cwd FROM threads WHERE id = ? LIMIT 1',(thread_id,)).fetchone()
-            if row:
-                return local_directory(row[0])
-        except (sqlite3.Error,ValueError,OSError):
+                rows=connection.execute(query,args).fetchall()
+            if rows:
+                return rows
+        except (sqlite3.Error, ValueError, OSError):
             continue
-    return None
+    return []
+
+
+def desktop_state(root):
+    try:
+        with (root/'.codex-global-state.json').open('rb') as stream:
+            data=stream.read(8*1024*1024+1)
+        if len(data)<=8*1024*1024:
+            state=json.loads(data.decode('utf-8'))
+            if isinstance(state,dict):
+                return state
+    except (OSError, ValueError):
+        pass
+    return {}
+
+
+def ordered_directories(values):
+    result={}
+    for value in values:
+        try:
+            path=local_directory(value)
+        except (ValueError,OSError,TypeError):
+            continue
+        result.setdefault(os.path.normcase(str(path)),path)
+    return list(result.values())
 
 
 def project_roots(params, state_root=None):
@@ -54,34 +80,28 @@ def project_roots(params, state_root=None):
 
 
 def _project_roots(params, state_root=None):
-    """Prefer the assigned project's ordered roots over its runtime cwd.
-
-    Never use the global selected project: another app window may change it.
-    """
-    meta=params.get('_meta') or {}
-    thread_id=meta.get('threadId') or meta.get('thread_id')
-    if not isinstance(thread_id,str) or not re.fullmatch(r'[0-9a-fA-F]{8}(?:-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}',thread_id):return []
-    root=Path(state_root) if state_root is not None else Path(os.environ.get('CODEX_HOME', str(Path.home()/'.codex')))
+    thread_id=thread_identifier(params)
+    if thread_id is None:
+        return []
+    root=state_directory(state_root)
+    state=desktop_state(root)
     try:
-        with (root/'.codex-global-state.json').open('rb') as stream:data=stream.read(8*1024*1024+1)
-        if len(data)>8*1024*1024:raise ValueError('state too large')
-        state=json.loads(data.decode('utf-8'))
         assignment=state.get('thread-project-assignments',{}).get(thread_id)
         host=state.get('thread-project-membership-host-ids',{}).get(thread_id,'local')
-        if isinstance(assignment,dict) and assignment.get('projectKind')=='local' and host=='local':
+        if host!='local' or (isinstance(assignment,dict) and assignment.get('projectKind')=='remote'):
+            return []
+        rows=query_state(root, '''SELECT r.path FROM threads t JOIN project_roots r ON r.project_id=t.project_id
+                                 WHERE t.id=? ORDER BY r.position LIMIT 32''', (thread_id,))
+        if roots:=ordered_directories(row[0] for row in rows):
+            return roots
+        if isinstance(assignment,dict) and assignment.get('projectKind')=='local':
             project=state.get('local-projects',{}).get(assignment.get('projectId'))
             paths=project.get('rootPaths') if isinstance(project,dict) else None
-            if isinstance(paths,list):
-                result=[];seen=set()
-                for value in paths[:32]:
-                    try:
-                        path=local_directory(value);key=os.path.normcase(str(path))
-                        if key not in seen:result.append(path);seen.add(key)
-                    except (ValueError,OSError,TypeError):continue
-                if result:return result
+            if isinstance(paths,list) and (roots:=ordered_directories(paths[:32])):
+                return roots
     except (OSError,ValueError,AttributeError,TypeError):pass
-    cwd=conversation_cwd(params,root)
-    return [cwd] if cwd is not None else []
+    rows=query_state(root,'SELECT cwd FROM threads WHERE id = ? LIMIT 1',(thread_id,))
+    return ordered_directories(row[0] for row in rows)
 
 
 def current_project(params, state_root=None):
@@ -89,49 +109,25 @@ def current_project(params, state_root=None):
     return roots[0] if roots else None
 
 
-def desktop_selected_project(state):
-    # Current desktop builds persist the selection under an owner-scoped key.
-    # Without an owner identity from the host, conflicting values are ambiguous.
-    prefix = 'electron-owner-value:selected-project:'
-    scoped = [value for key, value in state.items() if key.startswith(prefix) and key != prefix]
-    if not scoped:
-        return state.get('selected-project')
-    first = scoped[0]
-    return first if all(value == first for value in scoped) else None
-
-
-def selected_project_roots(params, state_root=None):
-    """One-shot draft fallback. Never follow this global selection after loading.
-
-    Drafts use an ephemeral MCP host thread with no saved project/cwd. Do not
-    replace known project, projectless or remote membership with another window's
-    selection, and do not accept an arbitrary directory from UI arguments.
-    """
-    meta=params.get('_meta') or {}
-    thread_id=meta.get('threadId') or meta.get('thread_id')
-    if thread_id is not None and (not isinstance(thread_id,str) or not re.fullmatch(r'[0-9a-fA-F]{8}(?:-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}',thread_id)):
-        return []
-    root=Path(state_root) if state_root is not None else Path(os.environ.get('CODEX_HOME', str(Path.home()/'.codex')))
-    try:
-        with (root/'.codex-global-state.json').open('rb') as stream:data=stream.read(8*1024*1024+1)
-        if len(data)>8*1024*1024:return []
-        state=json.loads(data.decode('utf-8'))
-        if thread_id is not None:
-            if thread_id in state.get('thread-project-assignments',{}):return []
-            if thread_id in state.get('projectless-thread-ids',[]):return []
-            if state.get('thread-project-membership-host-ids',{}).get(thread_id,'local')!='local':return []
-        selected=desktop_selected_project(state)
-        if not isinstance(selected,dict) or selected.get('type')!='local':return []
-        project_id=selected.get('projectId')
-        if not isinstance(project_id,str) or not project_id:return []
-        project=state.get('local-projects',{}).get(project_id)
-        paths=project.get('rootPaths') if isinstance(project,dict) else None
-        if not isinstance(paths,list):return []
-        result=[];seen=set()
-        for value in paths[:32]:
-            try:
-                path=local_directory(value);key=os.path.normcase(str(path))
-                if key not in seen:result.append(path);seen.add(key)
-            except (ValueError,OSError,TypeError):continue
-        return result
-    except (OSError,ValueError,AttributeError,TypeError):return []
+def desktop_project_choices(state_root=None):
+    """List saved projects for explicit selection when a draft has no identity."""
+    root=state_directory(state_root)
+    rows=query_state(root, '''SELECT p.id,p.name,r.path FROM projects p JOIN project_roots r ON r.project_id=p.id
+                             ORDER BY p.position,r.position LIMIT 256''')
+    projects={}
+    for project_id,name,path in rows:
+        projects.setdefault(project_id,(name,[]))[1].append(path)
+    if not projects:
+        legacy=desktop_state(root).get('local-projects')
+        if isinstance(legacy,dict):
+            projects={key:(item.get('name'),item['rootPaths']) for key,item in legacy.items()
+                      if isinstance(item,dict) and isinstance(item.get('rootPaths'),list)}
+    choices={}
+    for name,paths in projects.values():
+        for index,path in enumerate(ordered_directories(paths[:32])):
+            label=name.strip() if isinstance(name,str) else ''
+            label=(label+' · '+path.name) if label and index else label
+            choices.setdefault(os.path.normcase(str(path)),(path,label or path.name or str(path)))
+            if len(choices)>=32:
+                return list(choices.values())
+    return list(choices.values())

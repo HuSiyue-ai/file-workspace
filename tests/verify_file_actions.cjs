@@ -9,8 +9,9 @@ class Element{
  getBoundingClientRect(){return{left:420,bottom:290,width:208,height:220};}
  async emit(type,event={}){for(const fn of this.events[type]||[])await fn({type,preventDefault(){},stopPropagation(){},...event});}
 }
-const ids=['file-actions','file-copy-path','file-add-chat','file-new-file','file-new-folder','file-reveal','file-export','file-open-host','file-copy-name','file-delete','file-copy-fallback','file-copy-value','file-action-name'];
+const ids=['file-actions','file-copy-path','file-add-chat','file-new-file','file-new-folder','file-reveal','file-export','file-open-host','file-open-external','file-copy-name','file-delete','file-copy-fallback','file-copy-value','file-action-name'];
 const elements=Object.fromEntries(ids.map(id=>[id,new Element()]));elements['file-actions'].hidden=true;
+elements['file-open-external'].dataset={extensions:'.md .pdf .docx'};
 for(const id of ids.slice(1))elements['file-actions'].append(elements[id]);
 const document=new Element();document.body=new Element();document.getElementById=id=>elements[id];document.createElement=()=>new Element();
 let clipboard='',legacy=true,modernFailure=false,modernCalls=0,previewCancelled=0,opened=null,deferred=null,lastCopyInput=null,selectionCleanup=0;
@@ -21,6 +22,7 @@ const a={name:'中文 空格.md',path:'C:\\资料\\中文 空格.md',kind:'file'
 const key=p=>p.toLowerCase(),nodes=new Map([[key(a.path),a],[key(b.path),b]]),messages=[],notices=[];
 const context={document,window,navigator:{clipboard:{writeText:async text=>{modernCalls++;if(modernFailure)throw new Error('denied');clipboard=text;}}},viewerDisposed:false,selectionDraftAvailable:true,hostFileOpenAvailable:true,directoryNodes:nodes,pathKey:key,
  cancelPendingFilePreview:()=>previewCancelled++,resetSelectedExcerpt(){},setDirectoryMenuVisible(){},excerptNotice:(...args)=>notices.push(args),openDirectoryFile:async node=>opened=node.path,
+ workspaceRemoteHost:()=>'',unwrapWorkspace:result=>result.structuredContent,
  request:async(method,params)=>{messages.push({method,params});if(deferred)return deferred;return{};}};
 vm.createContext(context);vm.runInContext(fs.readFileSync(__dirname+'/../src/viewer/file-actions.js','utf8'),context);
 const run=code=>vm.runInContext(code,context);
@@ -47,6 +49,21 @@ async function main(){
  await document.emit('pointerdown',{target:document.body});assert.equal(elements['file-actions'].hidden,true);
  show();await window.emit('resize');assert.equal(elements['file-actions'].hidden,true);
  show();context.viewerDisposed=true;await window.emit('pagehide');assert.equal(elements['file-actions'].hidden,true);assert.equal(run('fileActionTarget'),null);
+ context.viewerDisposed=false;
+ const report={...b,name:'实验报告.DOCX',path:b.path.replace('other.png','report.DOCX')};
+ nodes.set(key(report.path),report);
+ context.hostFileOpenAvailable=false;
+ show(report);
+ assert.equal(elements['file-open-host'].disabled,true);
+ assert.equal(elements['file-open-external'].hidden,false);
+ await elements['file-open-external'].emit('click');
+ assert.deepEqual(JSON.parse(JSON.stringify(messages.at(-1))),{method:'tools/call',params:{name:'open_workspace_file_external',arguments:{path:report.path}}});
+ assert.equal(opened,b.path,'the system action must not open a Codex tab');
+ context.workspaceRemoteHost=()=> 'ssh-fixture';
+ show(report);
+ assert.equal(elements['file-open-external'].hidden,true);
+ await elements['file-open-external'].emit('click');
+ assert.equal(messages.length,2,'do not request a Windows launch for SSH files');
  console.log('PASS: context-only activation, exact clicked-file path/name, clipboard compatibility and honest manual fallback, draft-only targeted reference, duplicate/capability/stale guards, keyboard/viewport/outside/resize/teardown');
 }
 main().catch(error=>{console.error(error);process.exitCode=1;});

@@ -1,9 +1,11 @@
 import json
 import os
+import sqlite3
 import unittest
+from contextlib import closing
 from pathlib import Path
 from unittest.mock import patch
-from project_context import current_project, project_roots, selected_project_roots
+from project_context import current_project, project_roots, desktop_project_choices
 import test_project_start as fixtures
 THREAD=fixtures.THREAD
 from workspace_launcher import WorkspaceLauncher
@@ -53,80 +55,55 @@ class ProjectRootsTests(unittest.TestCase):
             params=launcher.authorize({'arguments':{'workspaceSession':item['session']}})
             self.assertEqual(list_directory(params)['structuredContent']['directory'],item['directory']['path'])
 
-    def test_new_draft_uses_selected_project_without_thread_row_or_assignment(self):
-        first=self.root/'主目录';first.mkdir()
-        state=self.write_state([str(self.project)],**{'selected-project':{'type':'local','projectId':'draft-project'}})
-        data=json.loads(state.read_text(encoding='utf-8'))
-        data['local-projects']['draft-project']={'rootPaths':[str(first),str(self.project),str(first)]}
-        state.write_text(json.dumps(data),encoding='utf-8');before=state.read_bytes()
-        params={'_meta':{'threadId':'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb'},'arguments':{'allowSelectedProject':True}}
-        self.assertEqual(project_roots(params,self.root),[])
-        self.assertEqual(selected_project_roots(params,self.root),[first.resolve(),self.project.resolve()])
-        self.assertEqual(state.read_bytes(),before,'startup lookup must never change the desktop project state')
-        launcher=WorkspaceLauncher()
-        with patch('workspace_launcher.project_roots',side_effect=lambda p:project_roots(p,self.root)),patch('workspace_launcher.selected_project_roots',side_effect=lambda p:selected_project_roots(p,self.root)):
-            result=launcher.start(params)['structuredContent']
-            self.assertEqual([item['directory']['path'] for item in result['roots']],[str(first.resolve()),str(self.project.resolve())])
-            scoped=launcher.authorize({'arguments':{'workspaceSession':result['session']}})
-            self.assertEqual(list_directory(scoped)['structuredContent']['directory'],str(first.resolve()))
+    def add_native_project(self, name, path):
+        with closing(sqlite3.connect(self.database)) as db, db:
+            db.execute('CREATE TABLE IF NOT EXISTS projects(id TEXT PRIMARY KEY,name TEXT,position INT)')
+            db.execute('CREATE TABLE IF NOT EXISTS project_roots(project_id TEXT,position INT,path TEXT)')
+            db.execute('INSERT INTO projects VALUES (?,?,0)', (name,name))
+            db.execute('INSERT INTO project_roots VALUES (?,0,?)', (name,str(path)))
 
-    def test_draft_reads_owner_scoped_selection_before_legacy(self):
-        selected = {'type':'local','projectId':'this-project'}
-        legacy = {'type':'local','projectId':'other-project'}
-        params = {'_meta':{'threadId':'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb'}}
-        key = 'electron-owner-value:selected-project:' + 'a'*64
-        other_key = 'electron-owner-value:selected-project:' + 'b'*64
-        cases = [
-            ({key:selected,'selected-project':None}, [self.project.resolve()]),
-            ({key:selected,'selected-project':legacy}, [self.project.resolve()]),
-            ({key:None,'selected-project':legacy}, []),
-            ({key:selected,other_key:legacy}, []),
-            ({key:selected,other_key:selected}, [self.project.resolve()]),
-        ]
-        for extra, expected in cases:
-            with self.subTest(extra=extra):
-                state = self.write_state([str(self.project)], **extra)
-                before = state.read_bytes()
-                self.assertEqual(selected_project_roots(params, self.root), expected)
-                self.assertEqual(state.read_bytes(), before)
-
-    def test_selected_project_lookup_honors_codex_home(self):
-        self.write_state([])
-        with patch.dict(os.environ, {'CODEX_HOME':str(self.root)}):
-            self.assertEqual(selected_project_roots({}),[self.root.resolve()])
-
-    def test_fallback_requires_explicit_startup_opt_in_and_keeps_real_project_first(self):
-        launcher=WorkspaceLauncher()
-        with patch('workspace_launcher.project_roots',return_value=[]),patch('workspace_launcher.selected_project_roots',return_value=[self.project.resolve()]) as fallback:
-            self.assertTrue(launcher.start({'arguments':{}})['structuredContent']['needsDirectory'])
-            self.assertTrue(launcher.start({'arguments':{'allowSelectedProject':'true'}})['structuredContent']['needsDirectory'])
-            fallback.assert_not_called()
-        with patch('workspace_launcher.project_roots',return_value=[self.project.resolve()]),patch('workspace_launcher.selected_project_roots') as fallback:
-            result=launcher.start({'arguments':{'allowSelectedProject':True}})['structuredContent']
-            self.assertEqual(result['directory']['path'],str(self.project.resolve()));fallback.assert_not_called()
-
-    def test_fallback_never_replaces_known_membership_or_remote_selection(self):
+    def test_two_drafts_get_choices_but_never_the_stale_robotics_default(self):
+        course=self.root/'course';course.mkdir()
+        robotics=self.root/'robotics';robotics.mkdir()
         state=self.write_state([str(self.project)])
-        original=json.loads(state.read_text(encoding='utf-8'))
-        draft='bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb'
-        cases=[({'thread-project-assignments':{draft:{'projectKind':'local','projectId':'missing'}}},draft),
-               ({'thread-project-membership-host-ids':{draft:'ssh:server'}},draft),
-               ({'projectless-thread-ids':[draft]},draft),
-               ({'selected-project':{'type':'remote','projectId':'other-project'}},draft),
-               ({},'invalid-thread')]
-        for updates,thread in cases:
-            state.write_text(json.dumps({**original,**updates}),encoding='utf-8')
-            self.assertEqual(selected_project_roots({'_meta':{'threadId':thread}},self.root),[])
-
-    def test_fallback_filters_invalid_paths_and_malformed_state(self):
-        state=self.write_state([])
         data=json.loads(state.read_text(encoding='utf-8'))
-        data['local-projects']['other-project']['rootPaths']=['relative',str(self.root/'missing'),str(self.project),str(self.project)]
+        data['local-projects']['robotics']={'name':'Robotics','rootPaths':[str(robotics)]}
+        data['electron-owner-value:selected-project:'+'a'*64]={'type':'local','projectId':'robotics'}
         state.write_text(json.dumps(data),encoding='utf-8')
-        self.assertEqual(selected_project_roots({},self.root),[self.project.resolve()])
-        for broken in ('[]','not json','{"selected-project": {"type":"local","projectId":"test"},"local-projects": []}'):
-            state.write_text(broken,encoding='utf-8')
-            self.assertEqual(selected_project_roots({},self.root),[])
+        self.add_native_project('Robotics',robotics)
+        self.add_native_project('Course',course)
+        before=state.read_bytes()
+        launcher=WorkspaceLauncher()
+        with patch.dict(os.environ, {'CODEX_HOME':str(self.root)}):
+            for meta in ({}, {'threadId':'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb'}):
+                result=launcher.start({'_meta':meta,'arguments':{'allowSelectedProject':True}})['structuredContent']
+                self.assertTrue(result['needsDirectory'])
+                self.assertNotIn('directory',result)
+                choices={item['directory']['name']:item for item in result['roots']}
+                for label,expected in [('Course',course),('Robotics',robotics)]:
+                    scope=launcher.authorize({'arguments':{'workspaceSession':choices[label]['session']}})
+                    self.assertEqual(Path(list_directory(scope)['structuredContent']['directory']),expected.resolve())
+            self.assertEqual(len(launcher.sessions),2)
+            self.assertEqual(launcher.start({'arguments':{}})['structuredContent']['roots'],[])
+        self.assertEqual(state.read_bytes(),before)
+
+    def test_native_thread_assignment_precedes_stale_legacy_and_cwd(self):
+        first=self.root/'native';first.mkdir()
+        second=self.root/'nested';second.mkdir()
+        self.write_state([str(self.root)])
+        self.add_native_project('Native',first)
+        with closing(sqlite3.connect(self.database)) as db, db:
+            db.execute('ALTER TABLE threads ADD COLUMN project_id TEXT')
+            db.execute('UPDATE threads SET project_id=? WHERE id=?',('Native',THREAD))
+            db.execute('INSERT INTO project_roots VALUES (?,1,?)',('Native',str(second)))
+        with patch.dict(os.environ, {'CODEX_HOME':str(self.root)}):
+            result=WorkspaceLauncher().start({'_meta':{'threadId':THREAD},'arguments':{'allowSelectedProject':True}})['structuredContent']
+        self.assertEqual([Path(item['directory']['path']) for item in result['roots']],[first.resolve(),second.resolve()])
+
+    def test_legacy_catalog_filters_invalid_and_duplicate_folders(self):
+        self.write_state([str(self.root/'missing'),str(self.project),str(self.project)])
+        with patch.dict(os.environ, {'CODEX_HOME':str(self.root)}):
+            self.assertEqual([path for path,label in desktop_project_choices()],[self.project.resolve(),self.root.resolve()])
 
 
 if __name__=='__main__':unittest.main()

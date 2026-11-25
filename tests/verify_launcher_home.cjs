@@ -24,10 +24,15 @@ async function main(){
   assert.equal(f.context.anchorFile.path,'C:/project');assert.equal(f.roots.length,2);assert.equal(f.timers.size,0);
   await f.run('retryWorkspaceHome()');assert.equal(f.calls.length,1,'loaded roots do not follow global project changes');
 
-  f=fixture();started=f.run('showLauncherHome()');f.reply(f.calls[0],{needsDirectory:true,roots:[]});await started;
+  f=fixture();started=f.run('showLauncherHome()');
+  f.reply(f.calls[0],{needsDirectory:true,roots:[project('robotics'),project('new-course')]});await started;
+  assert.equal(f.context.anchorFile,null,'a saved project choice is never a draft default');
   assert.equal(f.timers.size,1);const timer=[...f.timers.entries()][0];f.timers.delete(timer[0]);timer[1].fn();await tick();
-  assert.equal(f.calls[1].params.arguments.allowSelectedProject,false,'delayed queries do not bind to a different global project');
-  f.reply(f.calls[1],project('late-project'));await tick();
+  assert.equal(f.calls[1].params.arguments.allowSelectedProject,false,'delayed queries do not reload the manual project list');
+  f.reply(f.calls[1],{needsDirectory:true,roots:[]});await tick();
+  assert.equal(f.roots[1].directory.name,'new-course','the project menu survives retries without a conversation ID');
+  const lateTimer=[...f.timers.entries()][0];f.timers.delete(lateTimer[0]);lateTimer[1].fn();await tick();
+  f.reply(f.calls[2],project('late-project'));await tick();
   assert.equal(f.context.anchorFile.path,'C:/late-project');assert.equal(f.timers.size,0);
 
   f=fixture();started=f.run('showLauncherHome()');f.run('cancelWorkspaceHome()');
@@ -52,6 +57,6 @@ async function main(){
   assert.equal(f.context.anchorFile.path,'C:/refreshed-project');
   f=fixture();started=f.run('showLauncherHome()');const remote={directory:{name:'SSH',path:'/shared',host:'lab',resourceUri:'ssh:root'},session:'ssh-token'};
   f.reply(f.calls[0],{needsDirectory:true,roots:[remote]});await started;assert.equal(f.roots.length,1,'remote menu remains available without a local project');assert.equal(f.context.anchorFile,null,'SSH is not auto-connected');
-  console.log('PASS: new-chat roots, bounded delayed context, one-shot global fallback, manual/file/teardown races and explicit refresh');
+  console.log('PASS: saved project choices, delayed authoritative context, manual/file/teardown races and explicit refresh');
 }
 main().catch(error=>{console.error(error);process.exitCode=1;});

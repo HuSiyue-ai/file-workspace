@@ -7,6 +7,7 @@ function pluginUpdateNotice(text,isError=false){pluginUpdateStatus.hidden=!text;
 function captureWorkspaceReload(){
   return {schema:1,anchorFile,activePath:activeFile?.path||null,workspaceSession,hostInitialization:viewerHostInitialization,
     roots:workspaceRootChoices,selectedRoot:selectedWorkspaceRoot,
+    history:typeof workspaceHistory==='undefined'?null:{locations:workspaceHistory,index:workspaceHistoryIndex},
     directory:{visible:!directoryPanel.hidden,mode:navigationMode,root:directoryRoot?.path,
       expanded:[...directoryNodes.values()].filter(node=>node.kind==='directory'&&node.expanded).map(node=>node.path).slice(0,2000),
       filter:document.getElementById('directory-filter').value,top:directoryList.scrollTop,width:preferredDirectoryWidth},
@@ -55,6 +56,7 @@ async function resumeReloadedWorkspace(){
     if(activeFile?.kind==='markdown'&&['edit','source'].includes(state.mode))await changeDocumentMode(state.mode);
     const restoreScroll=()=>{if(!current())return;document.getElementById('document-area').scrollTop=state.top||0;directoryList.scrollTop=directory.top||0;scheduleExcerptMarkers();};
     restoreScroll();requestAnimationFrame(restoreScroll);
+    if(typeof restoreWorkspaceHistory==='function')restoreWorkspaceHistory(state.history);
     const version=document.querySelector('meta[name="workspace-version"]').content;
     const failed=[...(!previewRestored?['预览']:[]),...(!directoryRestored?['文件树']:[])];
     pluginUpdateNotice(failed.length
@@ -71,7 +73,8 @@ function workspaceOperationInProgress(){
     (typeof recycleOperationBusy!=='undefined'&&recycleOperationBusy)||editorSession?.saving;
 }
 async function reloadWorkspacePlugin(){
-  if(pluginReloadBusy||viewerDisposed)return;
+  if(pluginReloadBusy||viewerDisposed||(typeof historyNavigationBusy!=='undefined'&&historyNavigationBusy)||
+      (typeof pinOperationBusy!=='undefined'&&pinOperationBusy))return;
   if(workspaceOperationInProgress()){pluginUpdateNotice('请等待当前操作完成后再重载。');return;}
   pluginReloadBusy=true;pluginReloadButton.disabled=true;
   let previousMode, previousTop, editorClosed=false;

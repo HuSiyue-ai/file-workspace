@@ -37,7 +37,7 @@ class SshTests(unittest.TestCase):
         self.assertTrue(result['session'])
 
     def test_new_launcher_preserves_configured_headless_project(self):
-        with patch('workspace_launcher.selected_project_roots') as selected:
+        with patch('workspace_launcher.desktop_project_choices') as selected:
             launcher=WorkspaceLauncher()
             result=launcher.start({'arguments':{'allowSelectedProject':True}})['structuredContent']
             self.assertEqual(result['directory']['path'],str(self.root))

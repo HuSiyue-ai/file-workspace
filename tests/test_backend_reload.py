@@ -80,7 +80,7 @@ class BackendReloadTests(unittest.TestCase):
                     ssh_token = start['roots'][1]['session']
                     self.assertEqual(preview(token), '# 原文件')
                     self.assertIn('error',rpc('file-workspace/worker/snapshot'))
-                    changed = original_server.replace("if params.get('name') == FILE_TOOL['name']: return read_file(params)",
+                    changed = original_server.replace("if params.get('name') == FILE_TOOL['name']: return preview_file(params)",
                         """if params.get('name') == FILE_TOOL['name']:
             result = read_file(params)
             result['structuredContent']['text'] += ' · 新后台'

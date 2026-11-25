@@ -1,7 +1,14 @@
 // 文件树右键只作用于点中的条目；不切换正文，不读入整份文件，不自动发送消息。
 const fileActions=document.getElementById('file-actions');
-const fileActionIds=['file-copy-path','file-add-chat','file-new-file','file-new-folder','file-reveal','file-export','file-open-host','file-copy-name','file-delete'];
+const fileActionIds=['file-copy-path','file-add-chat','file-new-file','file-new-folder','file-reveal','file-export','file-open-host','file-open-external','file-copy-name','file-delete'];
 const fileCopyFallback=document.getElementById('file-copy-fallback');
+const externalOpenButton=document.getElementById('file-open-external');
+const externalExtensions=new Set(externalOpenButton.dataset.extensions.split(' '));
+function canOpenExternalFile(node){
+  if(node?.kind!=='file'||workspaceRemoteHost())return false;
+  const dot=node.name.lastIndexOf('.');
+  return dot>0&&externalExtensions.has(node.name.slice(dot).toLowerCase());
+}
 const fileCopyValue=document.getElementById('file-copy-value');
 let fileActionTarget=null,fileActionBusy=false,fileActionPoint=null;
 function fileActionItems(){return fileActionIds.map(id=>document.getElementById(id)).filter(button=>!button.disabled&&!button.hidden);}
@@ -11,6 +18,7 @@ function updateFileActions(){
   const file=fileActionTarget?.kind==='file';
   const reveal=document.getElementById('file-reveal'),exportButton=document.getElementById('file-export');
   reveal.hidden=exportButton.hidden=!file;
+  externalOpenButton.hidden=!canOpenExternalFile(fileActionTarget);
   document.getElementById('file-delete').hidden=!file;
   reveal.textContent=typeof workspaceRemoteHost==='function'&&workspaceRemoteHost()?'在文件树中定位':'打开文件所在文件夹';
   exportButton.disabled=fileActionBusy||(typeof treeTransferBusy!=='undefined'&&treeTransferBusy);
@@ -65,6 +73,7 @@ async function performFileAction(action){
   if(directoryNodes.get(pathKey(node.path))!==node){closeFileActions();excerptNotice('目录已更新，请重新右键选择文件。',true);return;}
   if(action==='chat'&&!selectionDraftAvailable){excerptNotice('当前窗口没有对话草稿接口。',true);return;}
   if(action==='open'&&!hostFileOpenAvailable){excerptNotice('当前窗口不支持交给应用打开。',true);return;}
+  if(action==='external'&&!canOpenExternalFile(node))return;
   if(action==='mkdir'){openNewFolderDialog(node);return;}
   if(action==='create'){openNewFolderDialog(node,'file');return;}
   if(action==='delete'){closeFileActions(true);await showDeleteFile(node);return;}
@@ -83,6 +92,8 @@ async function performFileAction(action){
       if(!viewerDisposed)excerptNotice('文件名和完整路径已加入聊天草稿，尚未发送；未附加整份文件。');
     }else if(action==='open'){
       await openDirectoryFile(node);
+    }else if(action==='external'){
+      unwrapWorkspace(await request('tools/call',{name:'open_workspace_file_external',arguments:{path:node.path}}));
     }else if(action==='reveal'){
       if(workspaceRemoteHost()){
         if(node.parent!==directoryRoot && !await enterDirectory(node.parent))return;
@@ -105,7 +116,7 @@ async function performFileAction(action){
     }
   }finally{fileActionBusy=false;if(!fileActions.hidden)updateFileActions();}
 }
-for(const [id,action] of [['file-copy-path','path'],['file-add-chat','chat'],['file-new-file','create'],['file-new-folder','mkdir'],['file-reveal','reveal'],['file-export','export'],['file-open-host','open'],['file-copy-name','name'],['file-delete','delete']])document.getElementById(id).addEventListener('click',()=>performFileAction(action));
+for(const [id,action] of [['file-copy-path','path'],['file-add-chat','chat'],['file-new-file','create'],['file-new-folder','mkdir'],['file-reveal','reveal'],['file-export','export'],['file-open-host','open'],['file-open-external','external'],['file-copy-name','name'],['file-delete','delete']])document.getElementById(id).addEventListener('click',()=>performFileAction(action));
 fileActions.addEventListener('keydown',event=>{
   if(event.key==='Escape'){event.preventDefault();event.stopPropagation();closeFileActions(true);return;}
   if(event.target===fileCopyValue)return;

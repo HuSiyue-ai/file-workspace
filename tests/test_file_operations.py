@@ -4,7 +4,7 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
-from file_operations import CHUNK_BYTES, FileCopies, create_file, read_copy
+from file_operations import CHUNK_BYTES, FileCopies, create_file, open_with_default_app, read_copy
 from file_reader import DirectoryAnchor
 
 
@@ -76,3 +76,22 @@ class FileOperationsTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, '范围'):
                 create_file(params)
         self.assertEqual(list(outside.iterdir()), [])
+
+    def test_default_app_opens_selected_documents_without_shell_arguments(self):
+        with patch('file_operations.os.startfile', create=True) as start:
+            for filename in ('参考答案.PDF', '含 空格.docx'):
+                target = self.folder / filename
+                target.touch()
+                self.assertTrue(open_with_default_app(self.params(path=str(target)))['structuredContent']['opened'])
+                start.assert_called_once_with(str(target))
+                start.reset_mock()
+            script = self.folder / 'test.cmd'
+            script.touch()
+            with self.assertRaisesRegex(ValueError, '文件类型'):
+                open_with_default_app(self.params(path=str(script)))
+            with self.assertRaisesRegex(ValueError, '已不存在'):
+                open_with_default_app(self.params(path=str(self.folder / 'missing.docx')))
+            with patch.dict('os.environ', {'FILE_WORKSPACE_HEADLESS': '1'}):
+                with self.assertRaisesRegex(ValueError, '当前环境'):
+                    open_with_default_app(self.params(path=str(target)))
+            start.assert_not_called()

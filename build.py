@@ -64,16 +64,18 @@ def main():
     parser = parser.replace('export function', 'function')
     parser = parser.replace('src="${escape(imageUrl(href))}"', 'data-md-image-src="${escape(href)}"')
     # Authored HTML is sanitized before math layout HTML is inserted.
-    script = libs + parser + '\n'.join((VIEWER / name).read_text(encoding='utf-8') for name in ['mermaid-surface.js', 'image-surface.js', 'format-surfaces.js', 'pdf-surface.js', 'viewer.js', 'file-icons.js', 'navigation.js', 'selection.js', 'outline.js', 'file-actions.js', 'file-recycle.js', 'edit-history.js', 'block-editor.js', 'toolbar.js', 'launcher.js', 'project-switcher.js', 'new-folder.js', 'file-transfer.js', 'selection-comments.js', 'comment-bubbles.js', 'plugin-reload.js'])
+    script = libs + parser + '\n'.join((VIEWER / name).read_text(encoding='utf-8') for name in ['mermaid-surface.js', 'image-surface.js', 'format-surfaces.js', 'pdf-surface.js', 'viewer.js', 'file-icons.js', 'navigation.js', 'selection.js', 'outline.js', 'file-actions.js', 'file-recycle.js', 'edit-history.js', 'block-editor.js', 'toolbar.js', 'launcher.js', 'project-switcher.js', 'workspace-navigation.js', 'new-folder.js', 'file-transfer.js', 'selection-comments.js', 'comment-bubbles.js', 'plugin-reload.js'])
     # A fresh document can run the bundle again without redeclaring global consts.
     script = globals_js + '\n(()=>{\n' + script + '\n})();'
-    template = (VIEWER / 'viewer-template.html').read_text(encoding='utf-8')
-    html = template.replace('__WORKSPACE_VERSION__', (ROOT/'VERSION').read_text(encoding='utf-8').strip()).replace('/* KATEX_CSS */', css).replace('/* VIEWER_SCRIPT */', script.replace('</script', '<\\/script'))
-    (PLUGIN / 'viewer.html').write_text(html, encoding='utf-8')
-    shutil.copy2(ROOT / 'VERSION', PLUGIN / 'VERSION')
     for module_path in sorted(BACKEND.glob('*.py')):
         shutil.copy2(module_path, PLUGIN / module_path.name)
     sys.path.insert(0, str(PLUGIN))
+    from file_operations import EXTERNAL_OPEN_EXTENSIONS
+    template = (VIEWER / 'viewer-template.html').read_text(encoding='utf-8')
+    template = template.replace('__EXTERNAL_OPEN_EXTENSIONS__', ' '.join(sorted(EXTERNAL_OPEN_EXTENSIONS)))
+    html = template.replace('__WORKSPACE_VERSION__', (ROOT/'VERSION').read_text(encoding='utf-8').strip()).replace('/* KATEX_CSS */', css).replace('/* VIEWER_SCRIPT */', script.replace('</script', '<\\/script'))
+    (PLUGIN / 'viewer.html').write_text(html, encoding='utf-8')
+    shutil.copy2(ROOT / 'VERSION', PLUGIN / 'VERSION')
     ssh_config = ROOT / '.runtime/ssh-workspaces.json'
     if ssh_config.is_file():
         from ssh_workspaces import profiles_from

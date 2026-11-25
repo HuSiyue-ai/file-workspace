@@ -2,7 +2,7 @@
 
 [Documentation](README.en.md) · [简体中文](installation.md) · [Linux / SSH](linux-ssh-installation.en.md) · [Troubleshooting](troubleshooting.en.md)
 
-After upgrading from 1.13.x to 1.14.x, quit and reopen Codex once. For subsequent updates, select **Reload Plugin** in the current file-workspace tab to load a newly installed interface or compatible backend.
+When upgrading from 1.15.0 or earlier to 1.15.2, quit and reopen Codex once after installation to register the new tools. When upgrading from 1.15.1, select **Reload Plugin** in the current file-workspace tab.
 
 ## Choose the runtime host
 
@@ -97,6 +97,6 @@ These commands leave source, Python environments, and document backups in place.
 
 ## Default project in a new conversation
 
-Existing conversation assignments and working directories take precedence. For an unsent local desktop conversation with no saved context, the empty launcher can read the desktop selected local project once. This is global compatibility state: simultaneous project changes in multiple windows may select the wrong initial root. Loaded or manually selected roots never follow later global changes. Startup retries delayed conversation context at most four times; refreshing an empty file tree retries the conversation lookup without reading global selection again.
+Existing conversations open their own assigned project or working directory. When an unsent local draft has no project context, choose a saved project from the menu at the top of the file tree. Startup retries delayed conversation context up to four times. After sending the first message, refresh the empty file tree to check for the conversation's project again.
 
 Linux / SSH keeps the server conversation lookup or explicitly configured `--project-root` first. Desktop project selection is not automatically sent to the server. Update the server checkout, rebuild with its original Python environment and reinstall; preserve `.runtime/server-env.json`.

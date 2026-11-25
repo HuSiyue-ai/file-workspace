@@ -7,7 +7,7 @@ import time
 import os
 from pathlib import Path
 from file_reader import selected_file, DirectoryAnchor
-from project_context import project_roots, selected_project_roots, local_directory
+from project_context import desktop_project_choices, project_roots, local_directory
 
 SESSION_KEY = 'workspaceSession'
 MAX_AGE = 24 * 60 * 60
@@ -68,11 +68,12 @@ class WorkspaceLauncher:
         path = local_directory(data.get('path')) if kind=='directory' else selected_file({'_meta': {'openai/resource': {'path': data.get('path')}}})
         return self.grant(path,kind)
 
-    def grant(self, path, kind):
-        token = secrets.token_urlsafe(32)
-        if len(self.sessions) >= 64:
-            self.sessions.pop(next(iter(self.sessions)))
-        self.sessions[token] = (str(path), time.monotonic(), kind)
+    def grant(self, path, kind, *, token=None):
+        if token not in self.sessions:
+            token = secrets.token_urlsafe(32)
+            if len(self.sessions) >= 64:
+                self.sessions.pop(next(iter(self.sessions)))
+            self.sessions[token] = (str(path), time.monotonic(), kind)
         return response({('directory' if kind=='directory' else 'file'): {'name': path.name or str(path), 'path': str(path), 'kind':kind,
                                   'resourceUri': 'file-workspace://selected/' + secrets.token_urlsafe(12)},
                          'session': token})
@@ -80,11 +81,17 @@ class WorkspaceLauncher:
     def start(self, params):
         self.prune()
         paths=project_roots(params)
-        # Only the empty launcher's first request opts in. Other callers and
-        # delayed retries must never rebind a page to global selection changes.
-        if not paths and (params.get('arguments') or {}).get('allowSelectedProject') is True:
-            paths=selected_project_roots(params)
-        if not paths:return response({'needsDirectory':True,'roots':[]})
+        if not paths:
+            choices=[]
+            # Retain the old argument name so running Codex connections can hot-reload.
+            # The catalog is only for manual selection. A draft has no trustworthy default.
+            if (params.get('arguments') or {}).get('allowSelectedProject') is True:
+                available={path:token for token,(path,_,kind) in self.sessions.items() if kind=='directory'}
+                for path,label in desktop_project_choices():
+                    choice=self.grant(path,'directory',token=available.get(str(path)))['structuredContent']
+                    choice['directory']['name']=label
+                    choices.append(choice)
+            return response({'needsDirectory':True,'roots':choices})
         roots=[self.grant(path,'directory')['structuredContent'] for path in paths]
         return response({**roots[0],'roots':roots})
 

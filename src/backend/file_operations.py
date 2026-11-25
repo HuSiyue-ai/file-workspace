@@ -12,10 +12,16 @@ from typing import BinaryIO
 
 from directory_writer import folder_name, writable_parent
 from file_reader import MARKDOWN, TEXT
-from image_reader import filesystem_path
+from image_reader import IMAGE_TYPES, filesystem_path
 
 CHUNK_BYTES = 512 * 1024
 MAX_COPY_BYTES = 256 * 1024 * 1024
+EXTERNAL_OPEN_EXTENSIONS = MARKDOWN | set(IMAGE_TYPES) | {
+    '.pdf', '.doc', '.docx', '.rtf', '.odt', '.wps', '.txt',
+    '.xls', '.xlsx', '.ods', '.csv', '.tsv', '.et',
+    '.ppt', '.pptx', '.odp', '.dps', '.epub',
+    '.mp3', '.wav', '.flac', '.m4a', '.mp4', '.mkv', '.webm', '.mov',
+}
 
 
 def reply(data):
@@ -87,6 +93,24 @@ def reveal_file(params):
             shell.ILFree(item)
     finally:
         ole.CoUninitialize()
+    return reply({'opened': True})
+
+
+def open_with_default_app(params):
+    startfile = getattr(os, 'startfile', None)
+    if startfile is None or os.environ.get('FILE_WORKSPACE_HEADLESS') == '1':
+        raise ValueError('当前环境无法启动 Windows 默认应用')
+    try:
+        path = workspace_file(params, params['arguments'].get('path'))
+        if path.suffix.lower() not in EXTERNAL_OPEN_EXTENSIONS:
+            raise ValueError('此文件类型不支持从文件树启动默认应用')
+        startfile(str(path))
+    except FileNotFoundError:
+        raise ValueError('文件已不存在，请刷新文件树') from None
+    except OSError as error:
+        if getattr(error, 'winerror', None) == 1155:
+            raise ValueError('Windows 尚未为此文件类型设置默认应用') from None
+        raise ValueError('Windows 无法打开此文件：' + (error.strerror or str(error))) from None
     return reply({'opened': True})
 
 

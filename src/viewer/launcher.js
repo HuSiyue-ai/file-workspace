@@ -1,6 +1,7 @@
 // Open the conversation project tree without requiring an initial file.
 let launcherBusy=false,launcherConnected=false,launcherTicket=null,launcherHomeStarted=false;
 let launcherHomeTimer=null,launcherHomeEpoch=0,launcherHomePending=false,launcherHomeAttempt=0,launcherHomeFallbackUsed=false;
+let launcherProjectChoices=[];
 const launcherHomeRetryDelays=[500,1000,2000,4000];
 const launchHome=document.getElementById('launch-home');
 function unwrapWorkspace(result){
@@ -34,11 +35,13 @@ async function showLauncherHome(retry=false){
     const allowSelectedProject=!launcherHomeFallbackUsed;launcherHomeFallbackUsed=true;
     const data=unwrapWorkspace(await request('tools/call',{name:'get_workspace_start',arguments:{allowSelectedProject}}));
     if(viewerDisposed||anchorFile||launcherBusy||epoch!==launcherHomeEpoch)return;
-    setWorkspaceRootChoices(data.roots||(data.directory?[data]:[]));
+    const roots=data.roots||(data.directory?[data]:[]);
+    if(allowSelectedProject&&!data.directory)launcherProjectChoices=roots;
+    setWorkspaceRootChoices(data.directory||allowSelectedProject?roots:[...launcherProjectChoices,...roots]);
     if(data.directory&&data.session){await openWorkspaceDirectory(data);}
     else{
-      document.getElementById('launch-caption').textContent='正在等待当前项目路径，也可以手动选择文件夹。';
-      setDirectoryVisible(true,'files');
+      document.getElementById('launch-caption').textContent='可以从文件树顶部的下拉菜单选择这个对话的项目。';
+      setDirectoryVisible(true,'files',false);
     }
   }catch(e){
     if(!viewerDisposed&&!anchorFile&&!launcherBusy&&epoch===launcherHomeEpoch){document.getElementById('launch-caption').textContent='点击“打开文件夹”载入项目文件树。';pickerNotice(e.message,true);setDirectoryVisible(true,'files');}
@@ -47,7 +50,7 @@ async function showLauncherHome(retry=false){
     if(!viewerDisposed&&!anchorFile&&!launcherBusy&&epoch===launcherHomeEpoch){
       const delay=launcherHomeRetryDelays[launcherHomeAttempt++];
       if(delay!==undefined)launcherHomeTimer=setTimeout(()=>{launcherHomeTimer=null;showLauncherHome(true);},delay);
-      else document.getElementById('launch-caption').textContent='暂未取得当前项目路径，请从项目菜单选择文件夹，或点击文件树刷新重试。';
+      else document.getElementById('launch-caption').textContent='新对话尚未提供项目路径。请从文件树顶部选择项目，或在发送首条消息后刷新文件树。';
     }
   }
 }
@@ -55,19 +58,29 @@ function retryWorkspaceHome(){
   if(!launcherConnected||viewerDisposed||anchorFile||launcherBusy)return;
   launcherHomeAttempt=0;return showLauncherHome(true);
 }
-async function openWorkspaceDirectory(data){
+function resetWorkspacePreview(){
+  activeFile=null;sourceText='';
+  stopEditor();resetSelectedExcerpt();clearOutline();pictureSurface.clear();clearFormatSurfaces();
+  preview.replaceChildren();document.getElementById('source').textContent='';document.getElementById('picture-view').hidden=true;
+  showEmptyWorkspace('单击右侧文件树中的文件，在这里预览。');
+  document.getElementById('document-area').scrollTo?.({top:0,behavior:'instant'});
+}
+async function openWorkspaceDirectory(data,directory){
   if(!data.directory?.resourceUri||typeof data.session!=='string')throw new Error('没有收到项目文件夹，请重新选择。');
   cancelWorkspaceHome();pickerNotice('');
   cancelPendingFilePreview();++readGeneration;loadingPreviewPath=null;
   setDirectoryVisible(false,'files');
   rememberWorkspaceRoot(data);
-  workspaceSession=data.session;anchorFile={...data.directory,kind:'directory'};activeFile=null;sourceText='';
-  stopEditor();resetSelectedExcerpt();clearOutline();pictureSurface.clear();clearFormatSurfaces();
-  preview.replaceChildren();document.getElementById('source').textContent='';document.getElementById('picture-view').hidden=true;
-  showEmptyWorkspace('单击右侧文件树中的文件，在这里预览。');
+  workspaceSession=data.session;anchorFile={...data.directory,kind:'directory'};
+  resetWorkspacePreview();
   syncDocumentNavigation({...anchorFile,path:null},false);
-  setDirectoryVisible(true,'files');
-  document.getElementById('document-area').scrollTo?.({top:0,behavior:'instant'});
+  if(typeof recordWorkspaceLocation!=='function'){setDirectoryVisible(true,'files');return;}
+  setDirectoryVisible(true,'files',false);
+  if(directory&&Array.isArray(directory.entries)){
+    replaceDirectoryData(directory);recordWorkspaceLocation();
+  }else if(await loadDirectory(data.directory.path)&&anchorFile.resourceUri===data.directory.resourceUri){
+    recordWorkspaceLocation();
+  }
 }
 function launcherFileOpened(){
   cancelWorkspaceHome();
@@ -79,7 +92,7 @@ function launcherFileOpened(){
   document.getElementById('workspace-open').hidden=!workspaceSession;
 }
 function adoptLinkedWorkspace(data){
-  if(!data.directory?.resourceUri||typeof data.session!=='string'||!data.directory.host)throw new Error('服务器目录会话无效，请从文件树重新选择。');
+  if(!data.directory?.resourceUri||typeof data.session!=='string')throw new Error('目录会话无效，请从文件树重新选择。');
   cancelWorkspaceHome();rememberWorkspaceRoot(data);
   workspaceSession=data.session;anchorFile={...data.directory,kind:'directory'};
 }
@@ -91,7 +104,7 @@ async function revealLinkedFile(){
   setDirectoryVisible(true,'files',false);
   const localRoots=typeof workspaceRootChoices==='undefined'?[]:workspaceRootChoices.filter(choice=>!choice.directory.host&&pathKey(file.path).startsWith(pathKey(choice.directory.path)+'/')).sort((a,b)=>b.directory.path.length-a.directory.path.length);
   if(!file.host&&typeof selectedWorkspaceRoot!=='undefined')selectedWorkspaceRoot=localRoots.length?workspaceChoiceKey(localRoots[0]):null;
-  const root=anchorFile?.kind==='directory'?anchorFile.path:localRoots[0]?.directory.path||file.path.replace(/[\\/][^\\/]+$/,'')||'/';
+  const root=file.host&&anchorFile?.kind==='directory'?anchorFile.path:localRoots[0]?.directory.path||file.path.replace(/[\\/][^\\/]+$/,'')||'/';
   const loaded=await loadDirectory(root);
   if(!current()||directoryPanel.hidden)return;
   if(loaded)await locateCurrentFile({focus:false});
